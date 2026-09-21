@@ -14,6 +14,7 @@
     --text:#e7eaee;
     --muted:#8b94a1;
     --brand:#5b8def;
+    --gold:#e0b84a;
     --gain:#3ddc84;
     --loss:#ff5c5c;
     font-size:16px;
@@ -37,12 +38,7 @@
     flex-wrap:wrap;
     gap:8px;
   }
-  header h1{
-    font-size:1.35rem;
-    font-weight:650;
-    margin:0;
-    letter-spacing:-0.01em;
-  }
+  header h1{ font-size:1.35rem; font-weight:650; margin:0; letter-spacing:-0.01em; }
   header .meta{ color:var(--muted); font-size:0.85rem; }
   header .dot{
     display:inline-block; width:8px; height:8px; border-radius:50%;
@@ -50,17 +46,27 @@
     box-shadow:0 0 0 3px rgba(61,220,132,0.15);
   }
 
-  main{ max-width:1080px; margin:0 auto; padding:28px 32px 60px; }
+  main{ max-width:1180px; margin:0 auto; padding:28px 32px 60px; }
 
-  .accountpick{ margin-bottom:20px; }
+  .accountpick{ display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
   .accountpick select{
     background:var(--panel); color:var(--text); border:1px solid var(--border);
     border-radius:8px; padding:8px 12px; font-size:0.9rem;
   }
+  .iconbtn{
+    background:var(--panel); color:var(--muted); border:1px solid var(--border);
+    border-radius:8px; padding:7px 12px; font-size:0.8rem; cursor:pointer;
+  }
+  .iconbtn:hover{ color:var(--text); border-color:#3a4453; }
+  .linkbtn{
+    background:none; border:none; color:var(--muted); font-size:0.78rem;
+    text-decoration:underline; cursor:pointer; padding:0;
+  }
+  .linkbtn:hover{ color:var(--text); }
 
   .stats{
     display:grid;
-    grid-template-columns:repeat(4,1fr);
+    grid-template-columns:repeat(6,1fr);
     gap:1px;
     background:var(--border);
     border:1px solid var(--border);
@@ -68,9 +74,10 @@
     overflow:hidden;
     margin-bottom:28px;
   }
-  .stat{ background:var(--panel); padding:20px 22px; }
-  .stat .label{ color:var(--muted); font-size:0.78rem; margin-bottom:8px; }
-  .stat .value{ font-size:1.6rem; font-weight:600; }
+  .stat{ background:var(--panel); padding:18px 18px; }
+  .stat .label{ color:var(--muted); font-size:0.74rem; margin-bottom:8px; }
+  .stat .value{ font-size:1.35rem; font-weight:600; }
+  .stat .value.small{ font-size:1.05rem; }
   .stat .value.gain{ color:var(--gain); }
   .stat .value.loss{ color:var(--loss); }
 
@@ -81,16 +88,14 @@
     padding:22px 24px;
     margin-bottom:24px;
   }
-  .panel h2{
-    font-size:0.95rem; font-weight:600; margin:0 0 16px;
-    color:var(--text);
-  }
+  .panel h2{ font-size:0.95rem; font-weight:600; margin:0 0 16px; color:var(--text); }
   .panel h2 span{ color:var(--muted); font-weight:400; font-size:0.82rem; }
 
   table{ width:100%; border-collapse:collapse; font-size:0.87rem; }
   th{
     text-align:left; color:var(--muted); font-weight:500;
     padding:8px 10px; border-bottom:1px solid var(--border); font-size:0.78rem;
+    white-space:nowrap;
   }
   th.sortable{ cursor:pointer; user-select:none; }
   th.sortable:hover{ color:var(--text); }
@@ -98,25 +103,30 @@
   tr:last-child td{ border-bottom:none; }
   td.num, th.num{ text-align:right; }
   .empty{ color:var(--muted); text-align:center; padding:30px 0; font-size:0.87rem; }
+  .eaname{ font-weight:600; }
+  .eaname .sub{ display:block; color:var(--muted); font-weight:400; font-size:0.74rem; margin-top:1px; }
 
-  .filterrow{ display:flex; align-items:center; gap:8px; margin-bottom:14px; font-size:0.85rem; color:var(--muted); }
+  .filterrow{ display:flex; align-items:center; gap:16px; margin-bottom:14px; font-size:0.85rem; color:var(--muted); flex-wrap:wrap; }
+  .filterrow .fgroup{ display:flex; align-items:center; gap:6px; }
   .filterrow select{
     background:var(--bg); color:var(--text); border:1px solid var(--border);
     border-radius:6px; padding:5px 10px; font-size:0.85rem;
   }
 
-  .eacard{
-    display:grid; grid-template-columns:1.2fr repeat(5,1fr); gap:1px;
-    background:var(--border); border:1px solid var(--border); border-radius:10px;
-    overflow:hidden; margin-bottom:1px;
+  .top5row{
+    display:flex; align-items:center; gap:12px; padding:10px 0;
+    border-bottom:1px solid var(--border);
   }
-  .eacard > div{ background:var(--panel); padding:12px 14px; }
-  .eacard .ealabel{ font-weight:600; }
-  .eacard .ealabel .sub{ display:block; color:var(--muted); font-weight:400; font-size:0.75rem; margin-top:2px; }
-  .eacard .col-label{ color:var(--muted); font-size:0.72rem; margin-bottom:3px; }
-  .eahead{ font-size:0.72rem; color:var(--muted); padding:6px 14px; }
-
-  canvas{ max-height:280px; }
+  .top5row:last-child{ border-bottom:none; }
+  .top5rank{
+    width:22px; height:22px; border-radius:50%; background:var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.72rem; font-weight:700; color:var(--muted); flex-shrink:0;
+  }
+  .top5row:nth-child(1) .top5rank{ background:var(--gold); color:#12161c; }
+  .top5name{ flex:1; font-weight:600; font-size:0.88rem; }
+  .top5name .sub{ display:block; color:var(--muted); font-weight:400; font-size:0.72rem; }
+  .top5net{ font-weight:600; }
 </style>
 </head>
 <body>
@@ -129,6 +139,8 @@
 <main>
   <div class="accountpick">
     <select id="accountSelect"><option>Caricamento conti…</option></select>
+    <button class="iconbtn" id="hideAccountBtn" title="Nascondi questo conto dall'elenco">Nascondi questo conto</button>
+    <button class="linkbtn" id="showHiddenBtn">mostra conti nascosti</button>
   </div>
 
   <div class="stats">
@@ -136,18 +148,29 @@
     <div class="stat"><div class="label">Saldo</div><div class="value num" id="stBalance">—</div></div>
     <div class="stat"><div class="label">P/L flottante</div><div class="value num" id="stProfit">—</div></div>
     <div class="stat"><div class="label">Drawdown</div><div class="value num" id="stDD">—</div></div>
+    <div class="stat"><div class="label">Broker</div><div class="value small" id="stBroker">—</div></div>
+    <div class="stat"><div class="label">Leva</div><div class="value num" id="stLeverage">—</div></div>
   </div>
 
   <div class="panel">
-    <h2>Per Expert Advisor <span id="eaSubtitle">— raggruppato per magic number</span></h2>
+    <h2>Top 5 Expert Advisor <span>— per netto realizzato</span></h2>
+    <div id="top5Wrap"><div class="empty">In attesa di dati…</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Per Expert Advisor <span id="eaSubtitle">— raggruppato per nome/commento</span></h2>
     <div id="eaWrap"><div class="empty">In attesa di dati…</div></div>
   </div>
 
   <div class="panel">
     <h2>Operazioni chiuse <span id="tradesSubtitle"></span></h2>
     <div class="filterrow">
-      <label for="magicFilter">Filtra per EA:</label>
-      <select id="magicFilter"><option value="">Tutti</option></select>
+      <div class="fgroup"><label for="magicFilter">EA:</label>
+        <select id="magicFilter"><option value="">Tutti</option></select></div>
+      <div class="fgroup"><label for="commentFilter">Commento:</label>
+        <select id="commentFilter"><option value="">Tutti</option></select></div>
+      <div class="fgroup"><label for="symbolFilter">Simbolo:</label>
+        <select id="symbolFilter"><option value="">Tutti</option></select></div>
     </div>
     <div id="tradesWrap">
       <div class="empty">In attesa di dati…</div>
@@ -157,7 +180,6 @@
 
 <script>
   // ====== CONFIGURA QUI ======
-  // Incolla qui il firebaseConfig del tuo progetto (Console Firebase > Impostazioni progetto > Le tue app > SDK setup)
   const firebaseConfig = {
     apiKey: "AIzaSyACC2UH3ICtaUcOtll4Rvfw9ScNH9iNhWc",
     authDomain: "ea-reporter.firebaseapp.com",
@@ -175,25 +197,70 @@
   const fmt = (n, c) => (n === undefined || n === null) ? "—" :
     new Intl.NumberFormat("it-IT", {style: c ? "currency" : "decimal", currency: c || undefined, maximumFractionDigits: 2}).format(n);
   const fmtDate = (unixSec) => new Date(unixSec * 1000).toLocaleString("it-IT");
+  const fmtDuration = (sec) => {
+    if(!sec || sec <= 0) return "—";
+    const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+    if(d > 0) return `${d}g ${h}h`;
+    if(h > 0) return `${h}h ${m}m`;
+    if(m > 0) return `${m}m`;
+    return `${sec}s`;
+  };
+  const eaLabel = (t) => (t.comment && t.comment.trim()) ? t.comment.trim() : `Magic ${t.magic ?? 0}`;
+
+  // ---------- Gestione conti nascosti (solo lato browser, non tocca i dati) ----------
+  const HIDDEN_KEY = "eaDashboard_hiddenAccounts";
+  const getHidden = () => { try { return JSON.parse(localStorage.getItem(HIDDEN_KEY)) || []; } catch(e){ return []; } };
+  const setHidden = (arr) => { try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(arr)); } catch(e){} };
+  let showHiddenToo = false;
 
   let currentAccount = null;
+  let allAccountIds = [];
   const accountSelect = document.getElementById("accountSelect");
 
-  // Elenca gli account presenti sotto /accounts e popola il selettore
   db.ref("accounts").on("value", (snap) => {
     const accounts = snap.val() || {};
-    const ids = Object.keys(accounts);
-    accountSelect.innerHTML = ids.length
-      ? ids.map(id => `<option value="${id}">${id}</option>`).join("")
-      : "<option>Nessun conto ancora</option>";
-    if(!currentAccount && ids.length){
-      currentAccount = ids[0];
+    allAccountIds = Object.keys(accounts);
+    renderAccountSelect();
+    if(!currentAccount && allAccountIds.length){
+      const hidden = getHidden();
+      const visible = allAccountIds.filter(id => !hidden.includes(id));
+      currentAccount = (visible[0] || allAccountIds[0]);
       accountSelect.value = currentAccount;
       watchAccount(currentAccount);
     }
   });
 
+  function renderAccountSelect(){
+    const hidden = getHidden();
+    const ids = showHiddenToo ? allAccountIds : allAccountIds.filter(id => !hidden.includes(id));
+    accountSelect.innerHTML = ids.length
+      ? ids.map(id => `<option value="${id}">${id}${hidden.includes(id) ? " (nascosto)" : ""}</option>`).join("")
+      : "<option>Nessun conto visibile</option>";
+    if(currentAccount && ids.includes(currentAccount)) accountSelect.value = currentAccount;
+  }
+
   accountSelect.addEventListener("change", (e) => watchAccount(e.target.value));
+
+  document.getElementById("hideAccountBtn").addEventListener("click", () => {
+    if(!currentAccount) return;
+    const hidden = getHidden();
+    if(!hidden.includes(currentAccount)) hidden.push(currentAccount);
+    setHidden(hidden);
+    const remaining = allAccountIds.filter(id => !hidden.includes(id));
+    currentAccount = remaining[0] || null;
+    renderAccountSelect();
+    if(currentAccount) watchAccount(currentAccount);
+  });
+
+  document.getElementById("showHiddenBtn").addEventListener("click", (e) => {
+    showHiddenToo = !showHiddenToo;
+    e.target.textContent = showHiddenToo ? "nascondi conti nascosti" : "mostra conti nascosti";
+    renderAccountSelect();
+  });
+
+  // ---------- Dati del conto selezionato ----------
+  let allTrades = [];
+  let filters = { magic: "", comment: "", symbol: "" };
 
   function watchAccount(accountId){
     currentAccount = accountId;
@@ -210,118 +277,133 @@
       const ddEl = document.getElementById("stDD");
       ddEl.textContent = (s.drawdown_pct ?? 0).toFixed(2) + " %";
       ddEl.className = "value num " + (s.drawdown_pct > 5 ? "loss" : "");
-      document.getElementById("lastUpdate").textContent =
-        "aggiornato " + fmtDate(s.updated_at) + (s.broker ? " · " + s.broker : "");
+      document.getElementById("stBroker").textContent = s.broker || "—";
+      document.getElementById("stLeverage").textContent = s.leverage ? `1:${s.leverage}` : "—";
+      document.getElementById("lastUpdate").textContent = "aggiornato " + fmtDate(s.updated_at);
     });
 
-    db.ref(`accounts/${accountId}/trades`).orderByChild("closed_at").limitToLast(500).on("value", (snap) => {
+    db.ref(`accounts/${accountId}/trades`).orderByChild("closed_at").limitToLast(1000).on("value", (snap) => {
       const val = snap.val() || {};
       allTrades = Object.values(val).sort((a,b) => b.closed_at - a.closed_at);
-      renderMagicFilter(allTrades);
+      renderFilterOptions(allTrades);
+      renderTop5(allTrades);
       renderEaSummary(allTrades);
-      renderTrades(filterByMagic(allTrades));
+      renderTrades(applyFilters(allTrades));
     });
   }
 
-  let allTrades = [];
-  let selectedMagic = "";
-
-  function filterByMagic(trades){
-    if(selectedMagic === "") return trades;
-    return trades.filter(t => String(t.magic) === selectedMagic);
+  function applyFilters(trades){
+    return trades.filter(t =>
+      (filters.magic === "" || String(t.magic ?? 0) === filters.magic) &&
+      (filters.comment === "" || eaLabel(t) === filters.comment) &&
+      (filters.symbol === "" || t.symbol === filters.symbol)
+    );
   }
 
   const magicFilter = document.getElementById("magicFilter");
-  magicFilter.addEventListener("change", (e) => {
-    selectedMagic = e.target.value;
-    renderTrades(filterByMagic(allTrades));
+  const commentFilter = document.getElementById("commentFilter");
+  const symbolFilter = document.getElementById("symbolFilter");
+  [["magic", magicFilter], ["comment", commentFilter], ["symbol", symbolFilter]].forEach(([key, el]) => {
+    el.addEventListener("change", (e) => {
+      filters[key] = e.target.value;
+      renderTrades(applyFilters(allTrades));
+    });
   });
 
-  function renderMagicFilter(trades){
+  function renderFilterOptions(trades){
     const magics = [...new Set(trades.map(t => String(t.magic ?? 0)))].sort();
-    const current = magicFilter.value;
-    magicFilter.innerHTML = '<option value="">Tutti</option>' +
-      magics.map(m => `<option value="${m}">Magic ${m}</option>`).join("");
-    magicFilter.value = magics.includes(current) ? current : "";
-    selectedMagic = magicFilter.value;
+    const comments = [...new Set(trades.map(eaLabel))].sort();
+    const symbols = [...new Set(trades.map(t => t.symbol).filter(Boolean))].sort();
+    const rebuild = (el, values, current, labelFn) => {
+      el.innerHTML = '<option value="">Tutti</option>' + values.map(v => `<option value="${v}">${labelFn ? labelFn(v) : v}</option>`).join("");
+      el.value = values.includes(current) ? current : "";
+    };
+    rebuild(magicFilter, magics, filters.magic, v => `Magic ${v}`);
+    rebuild(commentFilter, comments, filters.comment);
+    rebuild(symbolFilter, symbols, filters.symbol);
+    filters.magic = magicFilter.value; filters.comment = commentFilter.value; filters.symbol = symbolFilter.value;
   }
 
-  function renderEaSummary(trades){
-    const wrap = document.getElementById("eaWrap");
-    if(!trades.length){
-      wrap.innerHTML = '<div class="empty">Nessuna operazione chiusa ancora</div>';
-      return;
-    }
+  // ---------- Raggruppamento per EA (nome/commento come chiave primaria) ----------
+  function groupByEa(trades){
     const groups = {};
     trades.forEach(t => {
-      const key = String(t.magic ?? 0);
-      if(!groups[key]) groups[key] = { magic: key, count:0, wins:0, netSum:0, lots:0, lastComment:"" };
+      const key = eaLabel(t);
+      if(!groups[key]) groups[key] = { name: key, magic: t.magic ?? 0, count:0, wins:0, netSum:0, lots:0, durSum:0, durCount:0 };
       const g = groups[key];
       const net = t.net ?? t.profit ?? 0;
       g.count++;
       if(net >= 0) g.wins++;
       g.netSum += net;
       g.lots += (t.volume ?? 0);
-      if(!g.lastComment && t.comment) g.lastComment = t.comment;
+      if(t.duration_sec){ g.durSum += t.duration_sec; g.durCount++; }
     });
-    const rows = Object.values(groups).sort((a,b) => b.netSum - a.netSum).map(g => `
-      <div class="eacard">
-        <div class="ealabel">Magic ${g.magic}<span class="sub">${g.lastComment || "—"}</span></div>
-        <div><div class="col-label">Operazioni</div>${g.count}</div>
-        <div><div class="col-label">Win rate</div>${((g.wins/g.count)*100).toFixed(0)}%</div>
-        <div><div class="col-label">Lotti tot.</div>${g.lots.toFixed(2)}</div>
-        <div><div class="col-label">Netto</div><span style="color:${g.netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(g.netSum)}</span></div>
-        <div><div class="col-label">Media/trade</div>${fmt(g.netSum/g.count)}</div>
-      </div>`).join("");
-    wrap.innerHTML = `
-      <div class="eahead" style="display:grid;grid-template-columns:1.2fr repeat(5,1fr);">
-        <div>EA</div><div>Operazioni</div><div>Win rate</div><div>Lotti tot.</div><div>Netto</div><div>Media/trade</div>
-      </div>${rows}`;
+    return Object.values(groups);
   }
 
-  function renderTrades(trades){
-    const wrap = document.getElementById("tradesWrap");
-    document.getElementById("tradesSubtitle").textContent = `— ${trades.length} operazioni`;
-    if(!trades.length){
-      wrap.innerHTML = '<div class="empty">Nessuna operazione trovata</div>';
-      return;
-    }
-    const sorted = sortTrades(trades);
-    const rows = sorted.slice(0, 100).map(t => `
-      <tr>
-        <td>${fmtDate(t.closed_at)}</td>
-        <td>${t.symbol || ""}</td>
-        <td>${t.type === "buy_close" ? "Buy" : "Sell"}</td>
-        <td class="num">${(t.volume ?? 0).toFixed(2)}</td>
-        <td>${t.comment || ""}</td>
-        <td class="num">${t.magic ?? 0}</td>
-        <td class="num" style="color:${(t.net ?? t.profit) >= 0 ? 'var(--gain)' : 'var(--loss)'}">${fmt(t.net ?? t.profit)}</td>
-      </tr>`).join("");
+  function renderTop5(trades){
+    const wrap = document.getElementById("top5Wrap");
+    const groups = groupByEa(trades).sort((a,b) => b.netSum - a.netSum).slice(0, 5);
+    if(!groups.length){ wrap.innerHTML = '<div class="empty">Nessuna operazione chiusa ancora</div>'; return; }
+    wrap.innerHTML = groups.map((g, i) => `
+      <div class="top5row">
+        <div class="top5rank">${i+1}</div>
+        <div class="top5name">${g.name}<span class="sub">${g.count} operazioni · win rate ${((g.wins/g.count)*100).toFixed(0)}%</span></div>
+        <div class="top5net num" style="color:${g.netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(g.netSum)}</div>
+      </div>`).join("");
+  }
+
+  let eaSortState = { key: "net", dir: -1 };
+
+  function renderEaSummary(trades){
+    const wrap = document.getElementById("eaWrap");
+    const groups = groupByEa(trades);
+    if(!groups.length){ wrap.innerHTML = '<div class="empty">Nessuna operazione chiusa ancora</div>'; return; }
+
     const cols = [
-      {key:"closed_at", label:"Chiusa il"},
-      {key:"symbol", label:"Simbolo"},
-      {key:"type", label:"Verso"},
-      {key:"volume", label:"Lotti", num:true},
-      {key:"comment", label:"Commento"},
-      {key:"magic", label:"Magic", num:true},
-      {key:"net", label:"Netto", num:true}
+      {key:"name", label:"EA"},
+      {key:"count", label:"Operazioni", num:true},
+      {key:"winrate", label:"Win rate", num:true},
+      {key:"lots", label:"Lotti tot.", num:true},
+      {key:"net", label:"Netto", num:true},
+      {key:"avg", label:"Media/trade", num:true},
+      {key:"duration", label:"Durata media", num:true}
     ];
+    const getVal = (g, key) => {
+      if(key === "winrate") return g.wins / g.count;
+      if(key === "net") return g.netSum;
+      if(key === "avg") return g.netSum / g.count;
+      if(key === "duration") return g.durCount ? g.durSum / g.durCount : -1;
+      return g[key];
+    };
+    const sorted = groups.slice().sort((a,b) => {
+      let av = getVal(a, eaSortState.key), bv = getVal(b, eaSortState.key);
+      if(typeof av === "string") return av.localeCompare(bv) * eaSortState.dir;
+      return (av - bv) * eaSortState.dir;
+    });
+
     const head = cols.map(c => {
-      const active = sortState.key === c.key;
-      const arrow = active ? (sortState.dir === 1 ? " ▲" : " ▼") : "";
+      const active = eaSortState.key === c.key;
+      const arrow = active ? (eaSortState.dir === 1 ? " ▲" : " ▼") : "";
       return `<th class="${c.num?'num':''} sortable" data-key="${c.key}">${c.label}${arrow}</th>`;
     }).join("");
-    wrap.innerHTML = `
-      <table>
-        <thead><tr>${head}</tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
+    const rows = sorted.map(g => `
+      <tr>
+        <td class="eaname">${g.name}<span class="sub">Magic ${g.magic}</span></td>
+        <td class="num">${g.count}</td>
+        <td class="num">${((g.wins/g.count)*100).toFixed(0)}%</td>
+        <td class="num">${g.lots.toFixed(2)}</td>
+        <td class="num" style="color:${g.netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(g.netSum)}</td>
+        <td class="num">${fmt(g.netSum/g.count)}</td>
+        <td class="num">${g.durCount ? fmtDuration(g.durSum/g.durCount) : "—"}</td>
+      </tr>`).join("");
+    wrap.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
     wrap.querySelectorAll("th.sortable").forEach(th => {
       th.addEventListener("click", () => {
         const key = th.dataset.key;
-        if(sortState.key === key) sortState.dir *= -1;
-        else { sortState.key = key; sortState.dir = key === "closed_at" ? -1 : 1; }
-        renderTrades(trades);
+        if(eaSortState.key === key) eaSortState.dir *= -1;
+        else { eaSortState.key = key; eaSortState.dir = key === "name" ? 1 : -1; }
+        renderEaSummary(trades);
       });
     });
   }
@@ -331,14 +413,57 @@
   function sortTrades(trades){
     const key = sortState.key, dir = sortState.dir;
     return trades.slice().sort((a, b) => {
-      let av = key === "net" ? (a.net ?? a.profit ?? 0) : a[key];
-      let bv = key === "net" ? (b.net ?? b.profit ?? 0) : b[key];
+      let av = key === "net" ? (a.net ?? a.profit ?? 0) : (key === "duration_sec" ? (a.duration_sec ?? 0) : a[key]);
+      let bv = key === "net" ? (b.net ?? b.profit ?? 0) : (key === "duration_sec" ? (b.duration_sec ?? 0) : b[key]);
       if(typeof av === "string" || typeof bv === "string"){
         av = (av ?? "").toString().toLowerCase();
         bv = (bv ?? "").toString().toLowerCase();
         return av < bv ? -1*dir : av > bv ? 1*dir : 0;
       }
       return ((av ?? 0) - (bv ?? 0)) * dir;
+    });
+  }
+
+  function renderTrades(trades){
+    const wrap = document.getElementById("tradesWrap");
+    document.getElementById("tradesSubtitle").textContent = `— ${trades.length} operazioni`;
+    if(!trades.length){ wrap.innerHTML = '<div class="empty">Nessuna operazione trovata</div>'; return; }
+
+    const cols = [
+      {key:"closed_at", label:"Chiusa il"},
+      {key:"symbol", label:"Simbolo"},
+      {key:"type", label:"Verso"},
+      {key:"volume", label:"Lotti", num:true},
+      {key:"comment", label:"Commento"},
+      {key:"magic", label:"Magic", num:true},
+      {key:"duration_sec", label:"Durata", num:true},
+      {key:"net", label:"Netto", num:true}
+    ];
+    const sorted = sortTrades(trades);
+    const rows = sorted.slice(0, 150).map(t => `
+      <tr>
+        <td>${fmtDate(t.closed_at)}</td>
+        <td>${t.symbol || ""}</td>
+        <td>${t.type === "buy_close" ? "Buy" : "Sell"}</td>
+        <td class="num">${(t.volume ?? 0).toFixed(2)}</td>
+        <td>${t.comment || ""}</td>
+        <td class="num">${t.magic ?? 0}</td>
+        <td class="num">${fmtDuration(t.duration_sec)}</td>
+        <td class="num" style="color:${(t.net ?? t.profit) >= 0 ? 'var(--gain)' : 'var(--loss)'}">${fmt(t.net ?? t.profit)}</td>
+      </tr>`).join("");
+    const head = cols.map(c => {
+      const active = sortState.key === c.key;
+      const arrow = active ? (sortState.dir === 1 ? " ▲" : " ▼") : "";
+      return `<th class="${c.num?'num':''} sortable" data-key="${c.key}">${c.label}${arrow}</th>`;
+    }).join("");
+    wrap.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+    wrap.querySelectorAll("th.sortable").forEach(th => {
+      th.addEventListener("click", () => {
+        const key = th.dataset.key;
+        if(sortState.key === key) sortState.dir *= -1;
+        else { sortState.key = key; sortState.dir = key === "closed_at" ? -1 : 1; }
+        renderTrades(trades);
+      });
     });
   }
 </script>
