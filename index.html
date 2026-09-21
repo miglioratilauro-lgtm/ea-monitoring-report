@@ -92,6 +92,8 @@
     text-align:left; color:var(--muted); font-weight:500;
     padding:8px 10px; border-bottom:1px solid var(--border); font-size:0.78rem;
   }
+  th.sortable{ cursor:pointer; user-select:none; }
+  th.sortable:hover{ color:var(--text); }
   td{ padding:9px 10px; border-bottom:1px solid var(--border); }
   tr:last-child td{ border-bottom:none; }
   td.num, th.num{ text-align:right; }
@@ -284,7 +286,8 @@
       wrap.innerHTML = '<div class="empty">Nessuna operazione trovata</div>';
       return;
     }
-    const rows = trades.slice(0, 100).map(t => `
+    const sorted = sortTrades(trades);
+    const rows = sorted.slice(0, 100).map(t => `
       <tr>
         <td>${fmtDate(t.closed_at)}</td>
         <td>${t.symbol || ""}</td>
@@ -294,11 +297,49 @@
         <td class="num">${t.magic ?? 0}</td>
         <td class="num" style="color:${(t.net ?? t.profit) >= 0 ? 'var(--gain)' : 'var(--loss)'}">${fmt(t.net ?? t.profit)}</td>
       </tr>`).join("");
+    const cols = [
+      {key:"closed_at", label:"Chiusa il"},
+      {key:"symbol", label:"Simbolo"},
+      {key:"type", label:"Verso"},
+      {key:"volume", label:"Lotti", num:true},
+      {key:"comment", label:"Commento"},
+      {key:"magic", label:"Magic", num:true},
+      {key:"net", label:"Netto", num:true}
+    ];
+    const head = cols.map(c => {
+      const active = sortState.key === c.key;
+      const arrow = active ? (sortState.dir === 1 ? " ▲" : " ▼") : "";
+      return `<th class="${c.num?'num':''} sortable" data-key="${c.key}">${c.label}${arrow}</th>`;
+    }).join("");
     wrap.innerHTML = `
       <table>
-        <thead><tr><th>Chiusa il</th><th>Simbolo</th><th>Verso</th><th class="num">Lotti</th><th>Commento</th><th class="num">Magic</th><th class="num">Netto</th></tr></thead>
+        <thead><tr>${head}</tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
+    wrap.querySelectorAll("th.sortable").forEach(th => {
+      th.addEventListener("click", () => {
+        const key = th.dataset.key;
+        if(sortState.key === key) sortState.dir *= -1;
+        else { sortState.key = key; sortState.dir = key === "closed_at" ? -1 : 1; }
+        renderTrades(trades);
+      });
+    });
+  }
+
+  let sortState = { key: "closed_at", dir: -1 };
+
+  function sortTrades(trades){
+    const key = sortState.key, dir = sortState.dir;
+    return trades.slice().sort((a, b) => {
+      let av = key === "net" ? (a.net ?? a.profit ?? 0) : a[key];
+      let bv = key === "net" ? (b.net ?? b.profit ?? 0) : b[key];
+      if(typeof av === "string" || typeof bv === "string"){
+        av = (av ?? "").toString().toLowerCase();
+        bv = (bv ?? "").toString().toLowerCase();
+        return av < bv ? -1*dir : av > bv ? 1*dir : 0;
+      }
+      return ((av ?? 0) - (bv ?? 0)) * dir;
+    });
   }
 </script>
 </body>
