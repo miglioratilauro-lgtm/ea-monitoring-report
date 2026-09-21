@@ -290,13 +290,13 @@
         <td>${t.symbol || ""}</td>
         <td>${t.type === "buy_close" ? "Buy" : "Sell"}</td>
         <td class="num">${(t.volume ?? 0).toFixed(2)}</td>
-        <td class="num">${t.magic ?? 0}</td>
         <td>${t.comment || ""}</td>
+        <td class="num">${t.magic ?? 0}</td>
         <td class="num" style="color:${(t.net ?? t.profit) >= 0 ? 'var(--gain)' : 'var(--loss)'}">${fmt(t.net ?? t.profit)}</td>
       </tr>`).join("");
     wrap.innerHTML = `
       <table>
-        <thead><tr><th>Chiusa il</th><th>Simbolo</th><th>Verso</th><th class="num">Lotti</th><th class="num">Magic</th><th>Commento</th><th class="num">Netto</th></tr></thead>
+        <thead><tr><th>Chiusa il</th><th>Simbolo</th><th>Verso</th><th class="num">Lotti</th><th>Commento</th><th class="num">Magic</th><th class="num">Netto</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
   }
