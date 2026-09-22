@@ -197,6 +197,7 @@
   <div class="panel" id="chartPanel" style="display:none;">
     <h2 id="chartTitle">Andamento</h2>
     <div id="chartWrap"></div>
+    <div id="drawdownWrap" style="margin-top:6px;"></div>
     <div class="chartsummary" id="chartSummary"></div>
   </div>
 
@@ -215,6 +216,17 @@
     </div>
   </div>
 </main>
+
+<div id="chartModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; padding:30px; overflow:auto; align-items:flex-start; justify-content:center;">
+  <div style="max-width:1000px; width:100%; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px;">
+      <strong id="modalTitle" style="font-size:1.05rem;"></strong>
+      <button class="linkbtn" id="closeModalBtn">chiudi</button>
+    </div>
+    <div id="modalChartWrap"></div>
+    <div id="modalDrawdownWrap" style="margin-top:10px;"></div>
+  </div>
+</div>
 
 <script>
   // ====== CONFIGURA QUI ======
@@ -572,12 +584,21 @@
   }
 
   let accountCurrency = "";
+  let currentChartTrades = [];
+  let currentChartName = "";
 
   function renderChartPanel(name, trades){
     const panel = document.getElementById("chartPanel");
-    document.getElementById("chartTitle").innerHTML = `Andamento — ${name} <button class="linkbtn" id="closeChartBtn2" style="float:right">chiudi</button>`;
-    document.getElementById("chartWrap").innerHTML = drawEquitySvg(trades, accountCurrency);
+    currentChartTrades = trades;
+    currentChartName = name;
+    document.getElementById("chartTitle").innerHTML =
+      `Andamento — ${name} ` +
+      `<button class="linkbtn" id="expandChartBtn" style="float:right; margin-left:14px;">espandi</button>` +
+      `<button class="linkbtn" id="closeChartBtn2" style="float:right;">chiudi</button>`;
+    document.getElementById("chartWrap").innerHTML = drawEquitySvg(trades, accountCurrency, 260);
+    document.getElementById("drawdownWrap").innerHTML = drawDrawdownSvg(trades, accountCurrency, 90);
     document.getElementById("closeChartBtn2").addEventListener("click", hideChartPanel);
+    document.getElementById("expandChartBtn").addEventListener("click", () => openChartModal());
 
     if(trades.length){
       const sorted = trades.slice().sort((a,b) => a.closed_at - b.closed_at);
@@ -585,37 +606,62 @@
       document.getElementById("chartSummary").innerHTML = `
         <span>Periodo: <b>${fmtDate(sorted[0].closed_at)} → ${fmtDate(sorted[sorted.length-1].closed_at)}</b></span>
         <span>Operazioni: <b>${trades.length}</b></span>
-        <span>Netto: <b style="color:${netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(netSum)}</b></span>`;
+        <span>Netto: <b style="color:${netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(netSum)}</b></span>
+        <span><span style="color:var(--gain)">●</span> operazione in utile &nbsp; <span style="color:var(--loss)">●</span> operazione in perdita</span>`;
     } else {
       document.getElementById("chartSummary").innerHTML = "";
     }
     panel.style.display = "block";
   }
 
-  function drawEquitySvg(trades, currency){
-    if(!trades.length) return '<div class="empty">Nessuna operazione nel periodo selezionato</div>';
-    const sorted = trades.slice().sort((a,b) => a.closed_at - b.closed_at);
-    let running = 0;
-    const points = sorted.map(t => { running += (t.net ?? t.profit ?? 0); return { x: t.closed_at, y: running, net: t.net ?? t.profit ?? 0 }; });
+  function openChartModal(){
+    document.getElementById("modalTitle").textContent = "Andamento — " + currentChartName;
+    document.getElementById("modalChartWrap").innerHTML = drawEquitySvg(currentChartTrades, accountCurrency, 460);
+    document.getElementById("modalDrawdownWrap").innerHTML = drawDrawdownSvg(currentChartTrades, accountCurrency, 150);
+    document.getElementById("chartModal").style.display = "flex";
+  }
+  function closeChartModal(){
+    document.getElementById("chartModal").style.display = "none";
+  }
+  document.getElementById("closeModalBtn").addEventListener("click", closeChartModal);
+  document.getElementById("chartModal").addEventListener("click", (e) => {
+    if(e.target.id === "chartModal") closeChartModal();
+  });
 
-    const W = 760, H = 260;
+  // Costruisce i punti scartando i weekend dall'asse (spaziatura per sequenza, non per tempo reale)
+  // e calcola in parallelo il drawdown (distanza dal massimo cumulato raggiunto fino a quel momento).
+  function buildSeries(trades){
+    const sorted = trades.slice().sort((a,b) => a.closed_at - b.closed_at);
+    let running = 0, peak = 0;
+    return sorted.map((t, i) => {
+      const net = t.net ?? t.profit ?? 0;
+      running += net;
+      peak = Math.max(peak, running);
+      return { i, closed_at: t.closed_at, y: running, net, dd: peak - running };
+    });
+  }
+
+  function drawEquitySvg(trades, currency, height){
+    if(!trades.length) return '<div class="empty">Nessuna operazione nel periodo selezionato</div>';
+    const points = buildSeries(trades);
+
+    const W = 760, H = height || 260;
     const padL = 66, padR = 16, padT = 26, padB = 34;
     const plotW = W - padL - padR, plotH = H - padT - padB;
 
-    const minX = points[0].x, maxX = points[points.length - 1].x;
+    const maxI = points.length - 1;
     const ys = points.map(p => p.y).concat([0]);
     const minY = Math.min(...ys), maxY = Math.max(...ys);
     const yRange = (maxY - minY) || 1;
-    const scaleX = x => maxX === minX ? padL + plotW/2 : padL + (x - minX) / (maxX - minX) * plotW;
+    const scaleX = i => maxI === 0 ? padL + plotW/2 : padL + (i / maxI) * plotW;
     const scaleY = y => padT + plotH - (y - minY) / yRange * plotH;
 
-    const path = points.map((p,i) => `${i===0?'M':'L'}${scaleX(p.x).toFixed(1)},${scaleY(p.y).toFixed(1)}`).join(" ");
+    const path = points.map((p,idx) => `${idx===0?'M':'L'}${scaleX(p.i).toFixed(1)},${scaleY(p.y).toFixed(1)}`).join(" ");
     const zeroY = scaleY(0).toFixed(1);
     const finalVal = points[points.length - 1].y;
     const color = finalVal >= 0 ? "#3ddc84" : "#ff5c5c";
-    const areaPath = `${path} L${scaleX(maxX).toFixed(1)},${padT+plotH} L${scaleX(minX).toFixed(1)},${padT+plotH} Z`;
+    const areaPath = `${path} L${scaleX(maxI).toFixed(1)},${padT+plotH} L${scaleX(0).toFixed(1)},${padT+plotH} Z`;
 
-    // griglia orizzontale + etichette valore (4 livelli)
     const levels = 4;
     let gridLines = "", gridLabels = "";
     for(let i = 0; i <= levels; i++){
@@ -625,20 +671,21 @@
       gridLabels += `<text x="${padL-8}" y="${Number(y)+3}" text-anchor="end" font-size="10" fill="#8b94a1" font-family="ui-monospace,monospace">${fmt(val, currency)}</text>`;
     }
 
-    // punti + tooltip nativo (hover)
     let dots = "";
-    points.forEach(p => {
-      const cx = scaleX(p.x).toFixed(1), cy = scaleY(p.y).toFixed(1);
+    const dotStep = points.length > 300 ? Math.ceil(points.length / 300) : 1; // troppi punti appesantiscono l'SVG
+    points.forEach((p, idx) => {
+      if(idx % dotStep !== 0 && idx !== points.length - 1) return;
+      const cx = scaleX(p.i).toFixed(1), cy = scaleY(p.y).toFixed(1);
       const dotColor = p.net >= 0 ? "#3ddc84" : "#ff5c5c";
-      dots += `<circle cx="${cx}" cy="${cy}" r="3" fill="${dotColor}" stroke="#12161c" stroke-width="1">` +
-              `<title>${new Date(p.x*1000).toLocaleString("it-IT")} · operazione ${p.net>=0?'+':''}${fmt(p.net, currency)} · cumulato ${fmt(p.y, currency)}</title></circle>`;
+      dots += `<circle cx="${cx}" cy="${cy}" r="2.6" fill="${dotColor}" stroke="#12161c" stroke-width="1">` +
+              `<title>${new Date(p.closed_at*1000).toLocaleString("it-IT")} · operazione ${p.net>=0?'+':''}${fmt(p.net, currency)} · cumulato ${fmt(p.y, currency)}</title></circle>`;
     });
 
-    const xLabelStart = new Date(minX*1000).toLocaleDateString("it-IT");
-    const xLabelEnd = new Date(maxX*1000).toLocaleDateString("it-IT");
+    const xLabelStart = new Date(points[0].closed_at*1000).toLocaleDateString("it-IT");
+    const xLabelEnd = new Date(points[points.length-1].closed_at*1000).toLocaleDateString("it-IT");
 
-    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:260px;">
-      <text x="${padL}" y="16" font-size="11" fill="#8b94a1">Profitto cumulato (${currency || ''})</text>
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;">
+      <text x="${padL}" y="16" font-size="11" fill="#8b94a1">Profitto cumulato (${currency || ''}) — per sequenza di operazioni, weekend esclusi</text>
       ${gridLines}
       ${gridLabels}
       <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="#5b8def" stroke-width="1" stroke-dasharray="3,3"/>
@@ -647,6 +694,28 @@
       ${dots}
       <text x="${padL}" y="${H-8}" font-size="10" fill="#8b94a1">${xLabelStart}</text>
       <text x="${W-padR}" y="${H-8}" text-anchor="end" font-size="10" fill="#8b94a1">${xLabelEnd}</text>
+    </svg>`;
+  }
+
+  function drawDrawdownSvg(trades, currency, height){
+    if(!trades.length) return "";
+    const points = buildSeries(trades);
+    const W = 760, H = height || 90;
+    const padL = 66, padR = 16, padT = 18, padB = 8;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const maxI = points.length - 1;
+    const maxDd = Math.max(...points.map(p => p.dd), 0.0001);
+    const scaleX = i => maxI === 0 ? padL + plotW/2 : padL + (i / maxI) * plotW;
+    const scaleY = dd => padT + (dd / maxDd) * plotH;
+
+    const path = points.map((p,idx) => `${idx===0?'M':'L'}${scaleX(p.i).toFixed(1)},${scaleY(p.dd).toFixed(1)}`).join(" ");
+    const areaPath = `M${scaleX(0).toFixed(1)},${padT} ${path.replace('M','L')} L${scaleX(maxI).toFixed(1)},${padT} Z`;
+    const maxDdPoint = points.reduce((m,p) => p.dd > m.dd ? p : m, points[0]);
+
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;">
+      <text x="${padL}" y="12" font-size="11" fill="#8b94a1">Drawdown dal massimo raggiunto (max ${fmt(maxDd, currency)})</text>
+      <path d="${areaPath}" fill="#ff5c5c" opacity="0.18" stroke="none"/>
+      <path d="${path}" fill="none" stroke="#ff5c5c" stroke-width="1.5"/>
     </svg>`;
   }
 
