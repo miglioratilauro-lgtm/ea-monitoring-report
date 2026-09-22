@@ -198,6 +198,7 @@
     <h2 id="chartTitle">Andamento</h2>
     <div id="chartWrap"></div>
     <div id="drawdownWrap" style="margin-top:6px;"></div>
+    <div id="realDdWrap"></div>
     <div class="chartsummary" id="chartSummary"></div>
   </div>
 
@@ -334,12 +335,17 @@
   let allTrades = [];
   let filters = { magic: "", comment: "", symbol: "", prefix: "" };
 
-  let statusRef = null, tradesRef = null;
+  let statusRef = null, tradesRef = null, ddMonitorRef = null;
+  let ddMonitorData = {};
 
   function watchAccount(accountId){
     currentAccount = accountId;
     if(statusRef) statusRef.off();
     if(tradesRef) tradesRef.off();
+    if(ddMonitorRef) ddMonitorRef.off();
+
+    ddMonitorRef = db.ref(`accounts/${accountId}/dd_monitor`);
+    ddMonitorRef.on("value", (snap) => { ddMonitorData = snap.val() || {}; });
 
     statusRef = db.ref(`accounts/${accountId}/status`);
     statusRef.on("value", (snap) => {
@@ -597,6 +603,7 @@
       `<button class="linkbtn" id="closeChartBtn2" style="float:right;">chiudi</button>`;
     document.getElementById("chartWrap").innerHTML = drawEquitySvg(trades, accountCurrency, 260);
     document.getElementById("drawdownWrap").innerHTML = drawDrawdownSvg(trades, accountCurrency, 90);
+    document.getElementById("realDdWrap").innerHTML = renderRealDdBlock(trades);
     document.getElementById("closeChartBtn2").addEventListener("click", hideChartPanel);
     document.getElementById("expandChartBtn").addEventListener("click", () => openChartModal());
 
@@ -612,6 +619,23 @@
       document.getElementById("chartSummary").innerHTML = "";
     }
     panel.style.display = "block";
+  }
+
+  function renderRealDdBlock(trades){
+    const magics = [...new Set(trades.map(t => String(t.magic ?? 0)))];
+    const entries = magics.map(m => ddMonitorData[m]).filter(Boolean);
+    if(!entries.length) return "";
+    const sum = (key) => entries.reduce((s,e) => s + (e[key] ?? 0), 0);
+    const maxPct = (key) => Math.max(...entries.map(e => e[key] ?? 0));
+    return `
+      <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+        <div style="font-size:0.78rem; color:var(--muted); margin-bottom:8px;">Drawdown reale (da DD Monitor, equity flottante inclusa)</div>
+        <div style="display:flex; gap:28px; flex-wrap:wrap; font-size:0.88rem;">
+          <span>Giornaliero: <b style="color:var(--loss)">${fmt(sum("max_dd_daily"), accountCurrency)} (${maxPct("max_dd_daily_pct").toFixed(2)}%)</b></span>
+          <span>Settimanale: <b style="color:var(--loss)">${fmt(sum("max_dd_weekly"), accountCurrency)} (${maxPct("max_dd_weekly_pct").toFixed(2)}%)</b></span>
+          <span>All-Time: <b style="color:var(--loss)">${fmt(sum("max_dd_alltime"), accountCurrency)} (${maxPct("max_dd_alltime_pct").toFixed(2)}%)</b></span>
+        </div>
+      </div>`;
   }
 
   function openChartModal(){
@@ -713,7 +737,7 @@
     const maxDdPoint = points.reduce((m,p) => p.dd > m.dd ? p : m, points[0]);
 
     return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;">
-      <text x="${padL}" y="12" font-size="11" fill="#8b94a1">Drawdown dal massimo raggiunto (max ${fmt(maxDd, currency)})</text>
+      <text x="${padL}" y="12" font-size="11" fill="#8b94a1">Drawdown sulle operazioni chiuse — NON il drawdown reale sull'equity flottante (max ${fmt(maxDd, currency)})</text>
       <path d="${areaPath}" fill="#ff5c5c" opacity="0.18" stroke="none"/>
       <path d="${path}" fill="none" stroke="#ff5c5c" stroke-width="1.5"/>
     </svg>`;
