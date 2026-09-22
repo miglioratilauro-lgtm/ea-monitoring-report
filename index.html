@@ -144,7 +144,7 @@
 <body>
 
 <header>
-  <h1>EA Performance</h1>
+  <h1>EA Performance <span id="headerBroker" style="color:var(--muted); font-weight:400;"></span></h1>
   <div class="meta"><span class="dot"></span><span id="lastUpdate">connessione in corso…</span></div>
 </header>
 
@@ -157,6 +157,7 @@
     <div class="periodrow">
       <label for="periodSelect">Storico:</label>
       <select id="periodSelect">
+        <option value="today">Oggi</option>
         <option value="7d">Ultimi 7 giorni</option>
         <option value="30d">Ultimi 30 giorni</option>
         <option value="90d">Ultimi 90 giorni</option>
@@ -165,6 +166,7 @@
       </select>
     </div>
   </div>
+  <div class="meta" id="periodRangeLabel" style="margin:-10px 0 20px;"></div>
 
   <div class="stats">
     <div class="stat"><div class="label">Equity</div><div class="value num" id="stEquity">—</div></div>
@@ -181,7 +183,13 @@
   </div>
 
   <div class="panel">
-    <h2>Per Expert Advisor <span id="eaSubtitle">— raggruppato per nome/commento</span></h2>
+    <h2>Per Expert Advisor <span id="eaSubtitle">— raggruppato per commento</span>
+      <span style="float:right; font-size:0.8rem;">
+        Raggruppa per:
+        <button class="linkbtn" id="groupByComment" style="text-decoration:none; font-weight:600;">Commento</button> ·
+        <button class="linkbtn" id="groupByMagic">Magic number</button>
+      </span>
+    </h2>
     <div id="eaWrap"><div class="empty">In attesa di dati…</div></div>
   </div>
 
@@ -237,6 +245,10 @@
   const eaLabel = (t) => (t.comment && t.comment.trim()) ? t.comment.trim() : `Magic ${t.magic ?? 0}`;
 
   function periodStartTimestamp(key){
+    if(key === "today"){
+      const d = new Date(); d.setHours(0,0,0,0);
+      return Math.floor(d.getTime() / 1000);
+    }
     const now = Math.floor(Date.now() / 1000);
     const days = { "7d":7, "30d":30, "90d":90, "365d":365 }[key];
     return days ? now - days * 86400 : 0;
@@ -324,6 +336,7 @@
       ddEl.textContent = (s.drawdown_pct ?? 0).toFixed(2) + " %";
       ddEl.className = "value num " + (s.drawdown_pct > 5 ? "loss" : "");
       document.getElementById("stBroker").textContent = s.broker || "—";
+      document.getElementById("headerBroker").textContent = s.broker ? `— ${s.broker}` : "";
       document.getElementById("stLeverage").textContent = s.leverage ? `1:${s.leverage}` : "—";
       document.getElementById("lastUpdate").textContent = "aggiornato " + fmtDate(s.updated_at);
     });
@@ -336,12 +349,24 @@
     tradesRef.on("value", (snap) => {
       const val = snap.val() || {};
       allTrades = Object.values(val).sort((a,b) => b.closed_at - a.closed_at);
+      renderPeriodLabel(allTrades);
       renderFilterOptions(allTrades);
       renderTop5(allTrades);
       renderEaSummary(allTrades);
       renderTrades(applyFilters(allTrades));
       hideChartPanel();
     });
+  }
+
+  function renderPeriodLabel(trades){
+    const el = document.getElementById("periodRangeLabel");
+    const fmtD = ts => new Date(ts * 1000).toLocaleDateString("it-IT");
+    const now = Math.floor(Date.now() / 1000);
+    let startTs = periodStartTimestamp(currentPeriod);
+    if(currentPeriod === "all"){
+      startTs = trades.length ? Math.min(...trades.map(t => t.closed_at)) : now;
+    }
+    el.textContent = `Periodo selezionato: dal ${fmtD(startTs)} al ${fmtD(now)}`;
   }
 
   function applyFilters(trades){
@@ -376,12 +401,28 @@
     filters.magic = magicFilter.value; filters.comment = commentFilter.value; filters.symbol = symbolFilter.value;
   }
 
-  // ---------- Raggruppamento per EA (nome/commento come chiave primaria) ----------
+  // ---------- Raggruppamento per EA: per commento (default) o per magic number ----------
+  let groupMode = "comment"; // "comment" | "magic"
+  const groupByCommentBtn = document.getElementById("groupByComment");
+  const groupByMagicBtn = document.getElementById("groupByMagic");
+  function setGroupMode(mode){
+    groupMode = mode;
+    groupByCommentBtn.style.fontWeight = mode === "comment" ? "600" : "400";
+    groupByMagicBtn.style.fontWeight = mode === "magic" ? "600" : "400";
+    document.getElementById("eaSubtitle").textContent = mode === "comment" ? "— raggruppato per commento" : "— raggruppato per magic number";
+    renderEaSummary(allTrades);
+    renderTop5(allTrades);
+  }
+  groupByCommentBtn.addEventListener("click", () => setGroupMode("comment"));
+  groupByMagicBtn.addEventListener("click", () => setGroupMode("magic"));
+
   function groupByEa(trades){
     const groups = {};
     trades.forEach(t => {
-      const key = eaLabel(t);
-      if(!groups[key]) groups[key] = { name: key, magic: t.magic ?? 0, count:0, wins:0, netSum:0, lots:0, durSum:0, durCount:0 };
+      const magicKey = String(t.magic ?? 0);
+      const commentKey = eaLabel(t);
+      const key = groupMode === "magic" ? magicKey : commentKey;
+      if(!groups[key]) groups[key] = { name: groupMode === "magic" ? `Magic ${magicKey}` : commentKey, count:0, wins:0, netSum:0, lots:0, durSum:0, durCount:0, magics:new Set(), comments:new Set() };
       const g = groups[key];
       const net = t.net ?? t.profit ?? 0;
       g.count++;
@@ -389,8 +430,14 @@
       g.netSum += net;
       g.lots += (t.volume ?? 0);
       if(t.duration_sec){ g.durSum += t.duration_sec; g.durCount++; }
+      g.magics.add(magicKey);
+      if(t.comment && t.comment.trim()) g.comments.add(t.comment.trim());
     });
-    return Object.values(groups);
+    return Object.values(groups).map(g => {
+      const others = groupMode === "magic" ? [...g.comments] : [...g.magics].map(m => `Magic ${m}`);
+      g.subtitle = others.length ? (others.length > 3 ? others.slice(0,3).join(", ") + ` +${others.length-3} altri` : others.join(", ")) : (groupMode === "magic" ? "nessun commento" : "");
+      return g;
+    });
   }
 
   function renderTop5(trades){
@@ -400,7 +447,7 @@
     wrap.innerHTML = groups.map((g, i) => `
       <div class="top5row" data-name="${g.name}">
         <div class="top5rank">${i+1}</div>
-        <div class="top5name">${g.name}<span class="sub">${g.count} operazioni · win rate ${((g.wins/g.count)*100).toFixed(0)}%</span></div>
+        <div class="top5name">${g.name}<span class="sub">${g.count} operazioni · win rate ${((g.wins/g.count)*100).toFixed(0)}% ${g.subtitle ? "· " + g.subtitle : ""}</span></div>
         <div class="top5net num" style="color:${g.netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(g.netSum)}</div>
       </div>`).join("");
     wrap.querySelectorAll(".top5row").forEach(el => el.addEventListener("click", () => showEaDetail(el.dataset.name)));
@@ -442,7 +489,7 @@
     }).join("");
     const rows = sorted.map(g => `
       <tr class="clickable" data-name="${g.name}">
-        <td class="eaname">${g.name}<span class="sub">Magic ${g.magic}</span></td>
+        <td class="eaname">${g.name}${g.subtitle ? `<span class="sub">${g.subtitle}</span>` : ""}</td>
         <td class="num">${g.count}</td>
         <td class="num">${((g.wins/g.count)*100).toFixed(0)}%</td>
         <td class="num">${g.lots.toFixed(2)}</td>
@@ -484,11 +531,17 @@
   }
 
   function showEaDetail(name){
-    filters.comment = [...commentFilter.options].some(o => o.value === name) ? name : "";
     filters.magic = "";
+    filters.comment = "";
+    if(groupMode === "magic" && name.startsWith("Magic ")){
+      const magicVal = name.substring(6);
+      filters.magic = [...magicFilter.options].some(o => o.value === magicVal) ? magicVal : "";
+    } else {
+      filters.comment = [...commentFilter.options].some(o => o.value === name) ? name : "";
+    }
     filters.symbol = "";
     commentFilter.value = filters.comment;
-    magicFilter.value = "";
+    magicFilter.value = filters.magic;
     symbolFilter.value = "";
 
     const filtered = applyFilters(allTrades);
