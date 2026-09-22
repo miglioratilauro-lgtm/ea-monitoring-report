@@ -183,10 +183,11 @@
   </div>
 
   <div class="panel">
-    <h2>Per Expert Advisor <span id="eaSubtitle">— raggruppato per commento</span>
+    <h2>Per Expert Advisor <span id="eaSubtitle">— raggruppato per nome breve</span>
       <span style="float:right; font-size:0.8rem;">
         Raggruppa per:
-        <button class="linkbtn" id="groupByComment" style="text-decoration:none; font-weight:600;">Commento</button> ·
+        <button class="linkbtn" id="groupByPrefix" style="text-decoration:none; font-weight:600;">Nome breve</button> ·
+        <button class="linkbtn" id="groupByComment">Commento intero</button> ·
         <button class="linkbtn" id="groupByMagic">Magic number</button>
       </span>
     </h2>
@@ -243,6 +244,12 @@
     return `${sec}s`;
   };
   const eaLabel = (t) => (t.comment && t.comment.trim()) ? t.comment.trim() : `Magic ${t.magic ?? 0}`;
+  const eaShortName = (t) => {
+    const c = (t.comment || "").trim();
+    if(!c) return `Magic ${t.magic ?? 0}`;
+    const sep = c.split("|")[0].trim();
+    return sep || c;
+  };
 
   function periodStartTimestamp(key){
     if(key === "today"){
@@ -313,7 +320,7 @@
 
   // ---------- Dati del conto selezionato ----------
   let allTrades = [];
-  let filters = { magic: "", comment: "", symbol: "" };
+  let filters = { magic: "", comment: "", symbol: "", prefix: "" };
 
   let statusRef = null, tradesRef = null;
 
@@ -327,6 +334,7 @@
       const s = snap.val();
       if(!s) return;
       const currency = s.currency || "";
+      accountCurrency = currency;
       document.getElementById("stEquity").textContent = fmt(s.equity, currency);
       document.getElementById("stBalance").textContent = fmt(s.balance, currency);
       const profitEl = document.getElementById("stProfit");
@@ -373,6 +381,7 @@
     return trades.filter(t =>
       (filters.magic === "" || String(t.magic ?? 0) === filters.magic) &&
       (filters.comment === "" || eaLabel(t) === filters.comment) &&
+      (filters.prefix === "" || eaShortName(t) === filters.prefix) &&
       (filters.symbol === "" || t.symbol === filters.symbol)
     );
   }
@@ -383,6 +392,7 @@
   [["magic", magicFilter], ["comment", commentFilter], ["symbol", symbolFilter]].forEach(([key, el]) => {
     el.addEventListener("change", (e) => {
       filters[key] = e.target.value;
+      filters.prefix = "";
       renderTrades(applyFilters(allTrades));
     });
   });
@@ -401,18 +411,22 @@
     filters.magic = magicFilter.value; filters.comment = commentFilter.value; filters.symbol = symbolFilter.value;
   }
 
-  // ---------- Raggruppamento per EA: per commento (default) o per magic number ----------
-  let groupMode = "comment"; // "comment" | "magic"
+  // ---------- Raggruppamento per EA: nome breve (default), commento intero, o magic number ----------
+  let groupMode = "prefix"; // "prefix" | "comment" | "magic"
+  const groupByPrefixBtn = document.getElementById("groupByPrefix");
   const groupByCommentBtn = document.getElementById("groupByComment");
   const groupByMagicBtn = document.getElementById("groupByMagic");
+  const groupLabels = { prefix: "— raggruppato per nome breve", comment: "— raggruppato per commento intero", magic: "— raggruppato per magic number" };
   function setGroupMode(mode){
     groupMode = mode;
-    groupByCommentBtn.style.fontWeight = mode === "comment" ? "600" : "400";
-    groupByMagicBtn.style.fontWeight = mode === "magic" ? "600" : "400";
-    document.getElementById("eaSubtitle").textContent = mode === "comment" ? "— raggruppato per commento" : "— raggruppato per magic number";
+    [["prefix",groupByPrefixBtn],["comment",groupByCommentBtn],["magic",groupByMagicBtn]].forEach(([m,btn]) => {
+      btn.style.fontWeight = mode === m ? "600" : "400";
+    });
+    document.getElementById("eaSubtitle").textContent = groupLabels[mode];
     renderEaSummary(allTrades);
     renderTop5(allTrades);
   }
+  groupByPrefixBtn.addEventListener("click", () => setGroupMode("prefix"));
   groupByCommentBtn.addEventListener("click", () => setGroupMode("comment"));
   groupByMagicBtn.addEventListener("click", () => setGroupMode("magic"));
 
@@ -421,8 +435,9 @@
     trades.forEach(t => {
       const magicKey = String(t.magic ?? 0);
       const commentKey = eaLabel(t);
-      const key = groupMode === "magic" ? magicKey : commentKey;
-      if(!groups[key]) groups[key] = { name: groupMode === "magic" ? `Magic ${magicKey}` : commentKey, count:0, wins:0, netSum:0, lots:0, durSum:0, durCount:0, magics:new Set(), comments:new Set() };
+      const prefixKey = eaShortName(t);
+      const key = groupMode === "magic" ? magicKey : groupMode === "comment" ? commentKey : prefixKey;
+      if(!groups[key]) groups[key] = { name: groupMode === "magic" ? `Magic ${magicKey}` : key, count:0, wins:0, netSum:0, lots:0, durSum:0, durCount:0, magics:new Set(), comments:new Set() };
       const g = groups[key];
       const net = t.net ?? t.profit ?? 0;
       g.count++;
@@ -434,7 +449,10 @@
       if(t.comment && t.comment.trim()) g.comments.add(t.comment.trim());
     });
     return Object.values(groups).map(g => {
-      const others = groupMode === "magic" ? [...g.comments] : [...g.magics].map(m => `Magic ${m}`);
+      let others;
+      if(groupMode === "magic") others = [...g.comments];
+      else if(groupMode === "prefix") others = [...g.magics].map(m => `Magic ${m}`);
+      else others = [...g.magics].map(m => `Magic ${m}`);
       g.subtitle = others.length ? (others.length > 3 ? others.slice(0,3).join(", ") + ` +${others.length-3} altri` : others.join(", ")) : (groupMode === "magic" ? "nessun commento" : "");
       return g;
     });
@@ -533,11 +551,14 @@
   function showEaDetail(name){
     filters.magic = "";
     filters.comment = "";
+    filters.prefix = "";
     if(groupMode === "magic" && name.startsWith("Magic ")){
       const magicVal = name.substring(6);
       filters.magic = [...magicFilter.options].some(o => o.value === magicVal) ? magicVal : "";
-    } else {
+    } else if(groupMode === "comment"){
       filters.comment = [...commentFilter.options].some(o => o.value === name) ? name : "";
+    } else {
+      filters.prefix = name;
     }
     filters.symbol = "";
     commentFilter.value = filters.comment;
@@ -550,10 +571,12 @@
     document.getElementById("chartPanel").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  let accountCurrency = "";
+
   function renderChartPanel(name, trades){
     const panel = document.getElementById("chartPanel");
     document.getElementById("chartTitle").innerHTML = `Andamento — ${name} <button class="linkbtn" id="closeChartBtn2" style="float:right">chiudi</button>`;
-    document.getElementById("chartWrap").innerHTML = drawEquitySvg(trades);
+    document.getElementById("chartWrap").innerHTML = drawEquitySvg(trades, accountCurrency);
     document.getElementById("closeChartBtn2").addEventListener("click", hideChartPanel);
 
     if(trades.length){
@@ -569,29 +592,61 @@
     panel.style.display = "block";
   }
 
-  function drawEquitySvg(trades){
+  function drawEquitySvg(trades, currency){
     if(!trades.length) return '<div class="empty">Nessuna operazione nel periodo selezionato</div>';
     const sorted = trades.slice().sort((a,b) => a.closed_at - b.closed_at);
     let running = 0;
-    const points = sorted.map(t => { running += (t.net ?? t.profit ?? 0); return { x: t.closed_at, y: running }; });
+    const points = sorted.map(t => { running += (t.net ?? t.profit ?? 0); return { x: t.closed_at, y: running, net: t.net ?? t.profit ?? 0 }; });
 
-    const W = 700, H = 220, pad = 14;
+    const W = 760, H = 260;
+    const padL = 66, padR = 16, padT = 26, padB = 34;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
     const minX = points[0].x, maxX = points[points.length - 1].x;
     const ys = points.map(p => p.y).concat([0]);
     const minY = Math.min(...ys), maxY = Math.max(...ys);
-    const scaleX = x => maxX === minX ? W/2 : pad + (x - minX) / (maxX - minX) * (W - 2*pad);
-    const scaleY = y => maxY === minY ? H/2 : (H - pad) - (y - minY) / (maxY - minY) * (H - 2*pad);
+    const yRange = (maxY - minY) || 1;
+    const scaleX = x => maxX === minX ? padL + plotW/2 : padL + (x - minX) / (maxX - minX) * plotW;
+    const scaleY = y => padT + plotH - (y - minY) / yRange * plotH;
 
     const path = points.map((p,i) => `${i===0?'M':'L'}${scaleX(p.x).toFixed(1)},${scaleY(p.y).toFixed(1)}`).join(" ");
     const zeroY = scaleY(0).toFixed(1);
     const finalVal = points[points.length - 1].y;
     const color = finalVal >= 0 ? "#3ddc84" : "#ff5c5c";
-    const areaPath = `${path} L${scaleX(maxX).toFixed(1)},${zeroY} L${scaleX(minX).toFixed(1)},${zeroY} Z`;
+    const areaPath = `${path} L${scaleX(maxX).toFixed(1)},${padT+plotH} L${scaleX(minX).toFixed(1)},${padT+plotH} Z`;
 
-    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:220px;">
-      <line x1="0" y1="${zeroY}" x2="${W}" y2="${zeroY}" stroke="#2a323d" stroke-dasharray="4,4"/>
-      <path d="${areaPath}" fill="${color}" opacity="0.08" stroke="none"/>
+    // griglia orizzontale + etichette valore (4 livelli)
+    const levels = 4;
+    let gridLines = "", gridLabels = "";
+    for(let i = 0; i <= levels; i++){
+      const val = minY + (yRange * i / levels);
+      const y = scaleY(val).toFixed(1);
+      gridLines += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#2a323d" stroke-width="1"/>`;
+      gridLabels += `<text x="${padL-8}" y="${Number(y)+3}" text-anchor="end" font-size="10" fill="#8b94a1" font-family="ui-monospace,monospace">${fmt(val, currency)}</text>`;
+    }
+
+    // punti + tooltip nativo (hover)
+    let dots = "";
+    points.forEach(p => {
+      const cx = scaleX(p.x).toFixed(1), cy = scaleY(p.y).toFixed(1);
+      const dotColor = p.net >= 0 ? "#3ddc84" : "#ff5c5c";
+      dots += `<circle cx="${cx}" cy="${cy}" r="3" fill="${dotColor}" stroke="#12161c" stroke-width="1">` +
+              `<title>${new Date(p.x*1000).toLocaleString("it-IT")} · operazione ${p.net>=0?'+':''}${fmt(p.net, currency)} · cumulato ${fmt(p.y, currency)}</title></circle>`;
+    });
+
+    const xLabelStart = new Date(minX*1000).toLocaleDateString("it-IT");
+    const xLabelEnd = new Date(maxX*1000).toLocaleDateString("it-IT");
+
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:260px;">
+      <text x="${padL}" y="16" font-size="11" fill="#8b94a1">Profitto cumulato (${currency || ''})</text>
+      ${gridLines}
+      ${gridLabels}
+      <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="#5b8def" stroke-width="1" stroke-dasharray="3,3"/>
+      <path d="${areaPath}" fill="${color}" opacity="0.10" stroke="none"/>
       <path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>
+      ${dots}
+      <text x="${padL}" y="${H-8}" font-size="10" fill="#8b94a1">${xLabelStart}</text>
+      <text x="${W-padR}" y="${H-8}" text-anchor="end" font-size="10" fill="#8b94a1">${xLabelEnd}</text>
     </svg>`;
   }
 
