@@ -127,6 +127,18 @@
   .top5name{ flex:1; font-weight:600; font-size:0.88rem; }
   .top5name .sub{ display:block; color:var(--muted); font-weight:400; font-size:0.72rem; }
   .top5net{ font-weight:600; }
+  .top5row{ cursor:pointer; }
+  .top5row:hover{ background:rgba(255,255,255,0.03); }
+  tr.clickable{ cursor:pointer; }
+  tr.clickable:hover{ background:rgba(255,255,255,0.03); }
+
+  .periodrow{ display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--muted); }
+  .periodrow select{
+    background:var(--bg); color:var(--text); border:1px solid var(--border);
+    border-radius:6px; padding:5px 10px; font-size:0.85rem;
+  }
+  .chartsummary{ display:flex; gap:24px; margin-top:10px; font-size:0.82rem; color:var(--muted); flex-wrap:wrap; }
+  .chartsummary b{ color:var(--text); }
 </style>
 </head>
 <body>
@@ -141,6 +153,17 @@
     <select id="accountSelect"><option>Caricamento conti…</option></select>
     <button class="iconbtn" id="hideAccountBtn" title="Nascondi questo conto dall'elenco">Nascondi questo conto</button>
     <button class="linkbtn" id="showHiddenBtn">mostra conti nascosti</button>
+    <span style="flex:1"></span>
+    <div class="periodrow">
+      <label for="periodSelect">Storico:</label>
+      <select id="periodSelect">
+        <option value="7d">Ultimi 7 giorni</option>
+        <option value="30d">Ultimi 30 giorni</option>
+        <option value="90d">Ultimi 90 giorni</option>
+        <option value="365d">Ultimo anno</option>
+        <option value="all" selected>Tutto lo storico</option>
+      </select>
+    </div>
   </div>
 
   <div class="stats">
@@ -160,6 +183,12 @@
   <div class="panel">
     <h2>Per Expert Advisor <span id="eaSubtitle">— raggruppato per nome/commento</span></h2>
     <div id="eaWrap"><div class="empty">In attesa di dati…</div></div>
+  </div>
+
+  <div class="panel" id="chartPanel" style="display:none;">
+    <h2 id="chartTitle">Andamento</h2>
+    <div id="chartWrap"></div>
+    <div class="chartsummary" id="chartSummary"></div>
   </div>
 
   <div class="panel">
@@ -206,6 +235,18 @@
     return `${sec}s`;
   };
   const eaLabel = (t) => (t.comment && t.comment.trim()) ? t.comment.trim() : `Magic ${t.magic ?? 0}`;
+
+  function periodStartTimestamp(key){
+    const now = Math.floor(Date.now() / 1000);
+    const days = { "7d":7, "30d":30, "90d":90, "365d":365 }[key];
+    return days ? now - days * 86400 : 0;
+  }
+  let currentPeriod = "all";
+  const periodSelect = document.getElementById("periodSelect");
+  periodSelect.addEventListener("change", (e) => {
+    currentPeriod = e.target.value;
+    if(currentAccount) watchAccount(currentAccount);
+  });
 
   // ---------- Gestione conti nascosti (solo lato browser, non tocca i dati) ----------
   const HIDDEN_KEY = "eaDashboard_hiddenAccounts";
@@ -262,10 +303,15 @@
   let allTrades = [];
   let filters = { magic: "", comment: "", symbol: "" };
 
+  let statusRef = null, tradesRef = null;
+
   function watchAccount(accountId){
     currentAccount = accountId;
+    if(statusRef) statusRef.off();
+    if(tradesRef) tradesRef.off();
 
-    db.ref(`accounts/${accountId}/status`).on("value", (snap) => {
+    statusRef = db.ref(`accounts/${accountId}/status`);
+    statusRef.on("value", (snap) => {
       const s = snap.val();
       if(!s) return;
       const currency = s.currency || "";
@@ -282,13 +328,19 @@
       document.getElementById("lastUpdate").textContent = "aggiornato " + fmtDate(s.updated_at);
     });
 
-    db.ref(`accounts/${accountId}/trades`).orderByChild("closed_at").limitToLast(1000).on("value", (snap) => {
+    const startTs = periodStartTimestamp(currentPeriod);
+    let q = db.ref(`accounts/${accountId}/trades`).orderByChild("closed_at");
+    q = startTs > 0 ? q.startAt(startTs) : q;
+    q = q.limitToLast(5000);
+    tradesRef = q;
+    tradesRef.on("value", (snap) => {
       const val = snap.val() || {};
       allTrades = Object.values(val).sort((a,b) => b.closed_at - a.closed_at);
       renderFilterOptions(allTrades);
       renderTop5(allTrades);
       renderEaSummary(allTrades);
       renderTrades(applyFilters(allTrades));
+      hideChartPanel();
     });
   }
 
@@ -346,11 +398,12 @@
     const groups = groupByEa(trades).sort((a,b) => b.netSum - a.netSum).slice(0, 5);
     if(!groups.length){ wrap.innerHTML = '<div class="empty">Nessuna operazione chiusa ancora</div>'; return; }
     wrap.innerHTML = groups.map((g, i) => `
-      <div class="top5row">
+      <div class="top5row" data-name="${g.name}">
         <div class="top5rank">${i+1}</div>
         <div class="top5name">${g.name}<span class="sub">${g.count} operazioni · win rate ${((g.wins/g.count)*100).toFixed(0)}%</span></div>
         <div class="top5net num" style="color:${g.netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(g.netSum)}</div>
       </div>`).join("");
+    wrap.querySelectorAll(".top5row").forEach(el => el.addEventListener("click", () => showEaDetail(el.dataset.name)));
   }
 
   let eaSortState = { key: "net", dir: -1 };
@@ -388,7 +441,7 @@
       return `<th class="${c.num?'num':''} sortable" data-key="${c.key}">${c.label}${arrow}</th>`;
     }).join("");
     const rows = sorted.map(g => `
-      <tr>
+      <tr class="clickable" data-name="${g.name}">
         <td class="eaname">${g.name}<span class="sub">Magic ${g.magic}</span></td>
         <td class="num">${g.count}</td>
         <td class="num">${((g.wins/g.count)*100).toFixed(0)}%</td>
@@ -406,6 +459,7 @@
         renderEaSummary(trades);
       });
     });
+    wrap.querySelectorAll("tr.clickable").forEach(tr => tr.addEventListener("click", () => showEaDetail(tr.dataset.name)));
   }
 
   let sortState = { key: "closed_at", dir: -1 };
@@ -422,6 +476,70 @@
       }
       return ((av ?? 0) - (bv ?? 0)) * dir;
     });
+  }
+
+  // ---------- Dettaglio di un singolo EA: filtro + grafico andamento ----------
+  function hideChartPanel(){
+    document.getElementById("chartPanel").style.display = "none";
+  }
+
+  function showEaDetail(name){
+    filters.comment = [...commentFilter.options].some(o => o.value === name) ? name : "";
+    filters.magic = "";
+    filters.symbol = "";
+    commentFilter.value = filters.comment;
+    magicFilter.value = "";
+    symbolFilter.value = "";
+
+    const filtered = applyFilters(allTrades);
+    renderTrades(filtered);
+    renderChartPanel(name, filtered);
+    document.getElementById("chartPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function renderChartPanel(name, trades){
+    const panel = document.getElementById("chartPanel");
+    document.getElementById("chartTitle").innerHTML = `Andamento — ${name} <button class="linkbtn" id="closeChartBtn2" style="float:right">chiudi</button>`;
+    document.getElementById("chartWrap").innerHTML = drawEquitySvg(trades);
+    document.getElementById("closeChartBtn2").addEventListener("click", hideChartPanel);
+
+    if(trades.length){
+      const sorted = trades.slice().sort((a,b) => a.closed_at - b.closed_at);
+      const netSum = trades.reduce((s,t) => s + (t.net ?? t.profit ?? 0), 0);
+      document.getElementById("chartSummary").innerHTML = `
+        <span>Periodo: <b>${fmtDate(sorted[0].closed_at)} → ${fmtDate(sorted[sorted.length-1].closed_at)}</b></span>
+        <span>Operazioni: <b>${trades.length}</b></span>
+        <span>Netto: <b style="color:${netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(netSum)}</b></span>`;
+    } else {
+      document.getElementById("chartSummary").innerHTML = "";
+    }
+    panel.style.display = "block";
+  }
+
+  function drawEquitySvg(trades){
+    if(!trades.length) return '<div class="empty">Nessuna operazione nel periodo selezionato</div>';
+    const sorted = trades.slice().sort((a,b) => a.closed_at - b.closed_at);
+    let running = 0;
+    const points = sorted.map(t => { running += (t.net ?? t.profit ?? 0); return { x: t.closed_at, y: running }; });
+
+    const W = 700, H = 220, pad = 14;
+    const minX = points[0].x, maxX = points[points.length - 1].x;
+    const ys = points.map(p => p.y).concat([0]);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const scaleX = x => maxX === minX ? W/2 : pad + (x - minX) / (maxX - minX) * (W - 2*pad);
+    const scaleY = y => maxY === minY ? H/2 : (H - pad) - (y - minY) / (maxY - minY) * (H - 2*pad);
+
+    const path = points.map((p,i) => `${i===0?'M':'L'}${scaleX(p.x).toFixed(1)},${scaleY(p.y).toFixed(1)}`).join(" ");
+    const zeroY = scaleY(0).toFixed(1);
+    const finalVal = points[points.length - 1].y;
+    const color = finalVal >= 0 ? "#3ddc84" : "#ff5c5c";
+    const areaPath = `${path} L${scaleX(maxX).toFixed(1)},${zeroY} L${scaleX(minX).toFixed(1)},${zeroY} Z`;
+
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:220px;">
+      <line x1="0" y1="${zeroY}" x2="${W}" y2="${zeroY}" stroke="#2a323d" stroke-dasharray="4,4"/>
+      <path d="${areaPath}" fill="${color}" opacity="0.08" stroke="none"/>
+      <path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>
+    </svg>`;
   }
 
   function renderTrades(trades){
