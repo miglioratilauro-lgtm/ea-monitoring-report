@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EA Performance — Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
@@ -14,6 +16,7 @@
     --text:#e7eaee;
     --muted:#8b94a1;
     --brand:#5b8def;
+    --brand2:#8b7ef0;
     --gold:#e0b84a;
     --gain:#3ddc84;
     --loss:#ff5c5c;
@@ -22,15 +25,19 @@
   *{box-sizing:border-box;}
   body{
     margin:0;
-    background:var(--bg);
+    background:
+      radial-gradient(900px 400px at 15% -10%, rgba(91,141,239,0.10), transparent 60%),
+      radial-gradient(700px 350px at 100% 0%, rgba(224,184,74,0.06), transparent 55%),
+      var(--bg);
     color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     line-height:1.45;
   }
+  h1, h2{ font-family:"Space Grotesk", -apple-system, sans-serif; }
   .num{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
 
   header{
-    padding:28px 32px 20px;
+    padding:30px 32px 22px;
     border-bottom:1px solid var(--border);
     display:flex;
     justify-content:space-between;
@@ -38,7 +45,10 @@
     flex-wrap:wrap;
     gap:8px;
   }
-  header h1{ font-size:1.35rem; font-weight:650; margin:0; letter-spacing:-0.01em; }
+  header h1{
+    font-size:1.5rem; font-weight:700; margin:0; letter-spacing:-0.01em;
+  }
+  header h1 .sub{ color:var(--muted); font-weight:500; font-size:1.05rem; }
   header .meta{ color:var(--muted); font-size:0.85rem; }
   header .dot{
     display:inline-block; width:8px; height:8px; border-radius:50%;
@@ -73,20 +83,28 @@
     border-radius:12px;
     overflow:hidden;
     margin-bottom:28px;
+    box-shadow:0 8px 24px -12px rgba(0,0,0,0.5);
   }
-  .stat{ background:var(--panel); padding:18px 18px; }
-  .stat .label{ color:var(--muted); font-size:0.74rem; margin-bottom:8px; }
+  .stat{ background:var(--panel); padding:18px 18px; position:relative; }
+  .stat::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--brand), var(--brand2));
+    opacity:0; transition:opacity 0.15s;
+  }
+  .stat:hover::before{ opacity:1; }
+  .stat .label{ color:var(--muted); font-size:0.74rem; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em; }
   .stat .value{ font-size:1.35rem; font-weight:600; }
   .stat .value.small{ font-size:1.05rem; }
   .stat .value.gain{ color:var(--gain); }
   .stat .value.loss{ color:var(--loss); }
 
   .panel{
-    background:var(--panel);
+    background:linear-gradient(180deg, var(--panel), #191f27);
     border:1px solid var(--border);
     border-radius:12px;
     padding:22px 24px;
     margin-bottom:24px;
+    box-shadow:0 8px 24px -14px rgba(0,0,0,0.55);
   }
   .panel h2{ font-size:0.95rem; font-weight:600; margin:0 0 16px; color:var(--text); }
   .panel h2 span{ color:var(--muted); font-weight:400; font-size:0.82rem; }
@@ -128,9 +146,9 @@
   .top5name .sub{ display:block; color:var(--muted); font-weight:400; font-size:0.72rem; }
   .top5net{ font-weight:600; }
   .top5row{ cursor:pointer; }
-  .top5row:hover{ background:rgba(255,255,255,0.03); }
+  .top5row:hover{ background:rgba(91,141,239,0.06); transform:translateX(2px); transition:transform 0.12s, background 0.12s; }
   tr.clickable{ cursor:pointer; }
-  tr.clickable:hover{ background:rgba(255,255,255,0.03); }
+  tr.clickable:hover{ background:rgba(91,141,239,0.06); }
 
   .periodrow{ display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--muted); }
   .periodrow select{
@@ -144,7 +162,7 @@
 <body>
 
 <header>
-  <h1>EA Performance <span id="headerBroker" style="color:var(--muted); font-weight:400;"></span></h1>
+  <h1>📈 EA Performance <span id="headerBroker" class="sub"></span></h1>
   <div class="meta"><span class="dot"></span><span id="lastUpdate">connessione in corso…</span></div>
 </header>
 
@@ -157,12 +175,12 @@
     <div class="periodrow">
       <label for="periodSelect">Storico:</label>
       <select id="periodSelect">
-        <option value="today">Oggi</option>
+        <option value="today" selected>Oggi</option>
         <option value="7d">Ultimi 7 giorni</option>
         <option value="30d">Ultimi 30 giorni</option>
         <option value="90d">Ultimi 90 giorni</option>
         <option value="365d">Ultimo anno</option>
-        <option value="all" selected>Tutto lo storico</option>
+        <option value="all">Tutto lo storico</option>
       </select>
     </div>
   </div>
@@ -178,12 +196,12 @@
   </div>
 
   <div class="panel">
-    <h2>Top 5 Expert Advisor <span>— per netto realizzato</span></h2>
+    <h2>🏆 Top 5 Expert Advisor <span>— per netto realizzato</span></h2>
     <div id="top5Wrap"><div class="empty">In attesa di dati…</div></div>
   </div>
 
   <div class="panel">
-    <h2>Per Expert Advisor <span id="eaSubtitle">— raggruppato per nome breve</span>
+    <h2>🤖 Per Expert Advisor <span id="eaSubtitle">— raggruppato per nome breve</span>
       <span style="float:right; font-size:0.8rem;">
         Raggruppa per:
         <button class="linkbtn" id="groupByPrefix" style="text-decoration:none; font-weight:600;">Nome breve</button> ·
@@ -203,7 +221,7 @@
   </div>
 
   <div class="panel">
-    <h2>Operazioni chiuse <span id="tradesSubtitle"></span></h2>
+    <h2>📋 Operazioni chiuse <span id="tradesSubtitle"></span></h2>
     <div class="filterrow">
       <div class="fgroup"><label for="magicFilter">EA:</label>
         <select id="magicFilter"><option value="">Tutti</option></select></div>
@@ -218,8 +236,8 @@
   </div>
 </main>
 
-<div id="chartModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; padding:30px; overflow:auto; align-items:flex-start; justify-content:center;">
-  <div style="max-width:1000px; width:100%; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:24px;">
+<div id="chartModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; padding:24px; overflow:auto; align-items:flex-start; justify-content:center;">
+  <div style="max-width:1500px; width:100%; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:28px;">
     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px;">
       <strong id="modalTitle" style="font-size:1.05rem;"></strong>
       <button class="linkbtn" id="closeModalBtn">chiudi</button>
@@ -250,6 +268,7 @@
   const fmtDate = (unixSec) => new Date(unixSec * 1000).toLocaleString("it-IT");
   const fmtDuration = (sec) => {
     if(!sec || sec <= 0) return "—";
+    sec = Math.round(sec);
     const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
     if(d > 0) return `${d}g ${h}h`;
     if(h > 0) return `${h}h ${m}m`;
@@ -273,7 +292,7 @@
     const days = { "7d":7, "30d":30, "90d":90, "365d":365 }[key];
     return days ? now - days * 86400 : 0;
   }
-  let currentPeriod = "all";
+  let currentPeriod = "today";
   const periodSelect = document.getElementById("periodSelect");
   periodSelect.addEventListener("change", (e) => {
     currentPeriod = e.target.value;
@@ -598,7 +617,7 @@
     currentChartTrades = trades;
     currentChartName = name;
     document.getElementById("chartTitle").innerHTML =
-      `Andamento — ${name} ` +
+      `📊 Andamento — ${name} ` +
       `<button class="linkbtn" id="expandChartBtn" style="float:right; margin-left:14px;">espandi</button>` +
       `<button class="linkbtn" id="closeChartBtn2" style="float:right;">chiudi</button>`;
     document.getElementById("chartWrap").innerHTML = drawEquitySvg(trades, accountCurrency, 260);
@@ -639,9 +658,9 @@
   }
 
   function openChartModal(){
-    document.getElementById("modalTitle").textContent = "Andamento — " + currentChartName;
-    document.getElementById("modalChartWrap").innerHTML = drawEquitySvg(currentChartTrades, accountCurrency, 460);
-    document.getElementById("modalDrawdownWrap").innerHTML = drawDrawdownSvg(currentChartTrades, accountCurrency, 150);
+    document.getElementById("modalTitle").textContent = "📊 Andamento — " + currentChartName;
+    document.getElementById("modalChartWrap").innerHTML = drawEquitySvg(currentChartTrades, accountCurrency, 460, 1400);
+    document.getElementById("modalDrawdownWrap").innerHTML = drawDrawdownSvg(currentChartTrades, accountCurrency, 150, 1400);
     document.getElementById("chartModal").style.display = "flex";
   }
   function closeChartModal(){
@@ -665,11 +684,11 @@
     });
   }
 
-  function drawEquitySvg(trades, currency, height){
+  function drawEquitySvg(trades, currency, height, width){
     if(!trades.length) return '<div class="empty">Nessuna operazione nel periodo selezionato</div>';
     const points = buildSeries(trades);
 
-    const W = 760, H = height || 260;
+    const W = width || 760, H = height || 260;
     const padL = 66, padR = 16, padT = 26, padB = 34;
     const plotW = W - padL - padR, plotH = H - padT - padB;
 
@@ -721,10 +740,10 @@
     </svg>`;
   }
 
-  function drawDrawdownSvg(trades, currency, height){
+  function drawDrawdownSvg(trades, currency, height, width){
     if(!trades.length) return "";
     const points = buildSeries(trades);
-    const W = 760, H = height || 90;
+    const W = width || 760, H = height || 90;
     const padL = 66, padR = 16, padT = 18, padB = 8;
     const plotW = W - padL - padR, plotH = H - padT - padB;
     const maxI = points.length - 1;
