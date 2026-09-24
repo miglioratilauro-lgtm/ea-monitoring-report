@@ -162,8 +162,8 @@
   .scorenum{ font-size:2.6rem; font-weight:700; font-family:"Space Grotesk",sans-serif; line-height:1; }
   .scorebadge{ display:inline-block; padding:3px 11px; border-radius:20px; font-size:0.74rem; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; margin-top:6px; }
   .scorebadge.discard{ background:rgba(255,92,92,0.15); color:var(--loss); }
-  .scorebadge.osserva{ background:rgba(224,184,74,0.15); color:var(--gold); }
-  .scorebadge.promuovi{ background:rgba(61,220,132,0.15); color:var(--gain); }
+  .scorebadge.watch{ background:rgba(224,184,74,0.15); color:var(--gold); }
+  .scorebadge.promote{ background:rgba(61,220,132,0.15); color:var(--gain); }
   .scorebar{ height:8px; border-radius:4px; background:linear-gradient(90deg, var(--loss), var(--gold), var(--gain)); position:relative; margin-top:8px; width:220px; }
   .scorebar .marker{ position:absolute; top:-3px; width:3px; height:14px; background:#fff; border-radius:2px; }
   .subscores{ flex:1; min-width:220px; display:flex; flex-direction:column; gap:8px; }
@@ -193,57 +193,60 @@
 
 <header>
   <h1>📈 EA Performance <span id="headerBroker" class="sub"></span></h1>
-  <div class="meta"><span class="dot"></span><span id="lastUpdate">connessione in corso…</span></div>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <button class="iconbtn" id="langToggle">EN</button>
+    <div class="meta"><span class="dot"></span><span id="lastUpdate" data-i18n="connecting">connessione in corso…</span></div>
+  </div>
 </header>
 
 <main>
   <div class="accountpick">
-    <select id="accountSelect"><option>Caricamento conti…</option></select>
-    <button class="iconbtn" id="hideAccountBtn" title="Nascondi questo conto dall'elenco">Nascondi questo conto</button>
-    <button class="linkbtn" id="showHiddenBtn">mostra conti nascosti</button>
+    <select id="accountSelect"><option data-i18n="loadingAccounts">Caricamento conti…</option></select>
+    <button class="iconbtn" id="hideAccountBtn" data-i18n-title="hideAccountTitle" data-i18n="hideAccount" title="Nascondi questo conto dall'elenco">Nascondi questo conto</button>
+    <button class="linkbtn" id="showHiddenBtn" data-i18n="showHidden">mostra conti nascosti</button>
     <span style="flex:1"></span>
     <div class="periodrow">
-      <label for="periodSelect">Storico:</label>
+      <label for="periodSelect" data-i18n="historyLabel">Storico:</label>
       <select id="periodSelect">
-        <option value="today" selected>Oggi</option>
-        <option value="7d">Ultimi 7 giorni</option>
-        <option value="30d">Ultimi 30 giorni</option>
-        <option value="90d">Ultimi 90 giorni</option>
-        <option value="365d">Ultimo anno</option>
-        <option value="all">Tutto lo storico</option>
+        <option value="today" selected data-i18n="periodToday">Oggi</option>
+        <option value="7d" data-i18n="period7d">Ultimi 7 giorni</option>
+        <option value="30d" data-i18n="period30d">Ultimi 30 giorni</option>
+        <option value="90d" data-i18n="period90d">Ultimi 90 giorni</option>
+        <option value="365d" data-i18n="period365d">Ultimo anno</option>
+        <option value="all" data-i18n="periodAll">Tutto lo storico</option>
       </select>
     </div>
   </div>
   <div class="meta" id="periodRangeLabel" style="margin:-10px 0 20px;"></div>
 
   <div class="stats">
-    <div class="stat"><div class="label">Equity</div><div class="value num" id="stEquity">—</div></div>
-    <div class="stat"><div class="label">Saldo</div><div class="value num" id="stBalance">—</div></div>
-    <div class="stat"><div class="label">P/L flottante</div><div class="value num" id="stProfit">—</div></div>
-    <div class="stat"><div class="label">Drawdown</div><div class="value num" id="stDD">—</div></div>
-    <div class="stat"><div class="label">Broker</div><div class="value small" id="stBroker">—</div></div>
-    <div class="stat"><div class="label">Leva</div><div class="value num" id="stLeverage">—</div></div>
+    <div class="stat"><div class="label" data-i18n="statEquity">Equity</div><div class="value num" id="stEquity">—</div></div>
+    <div class="stat"><div class="label" data-i18n="statBalance">Saldo</div><div class="value num" id="stBalance">—</div></div>
+    <div class="stat"><div class="label" data-i18n="statFloating">P/L flottante</div><div class="value num" id="stProfit">—</div></div>
+    <div class="stat"><div class="label" data-i18n="statDrawdown">Drawdown</div><div class="value num" id="stDD">—</div></div>
+    <div class="stat"><div class="label" data-i18n="statBroker">Broker</div><div class="value small" id="stBroker">—</div></div>
+    <div class="stat"><div class="label" data-i18n="statLeverage">Leva</div><div class="value num" id="stLeverage">—</div></div>
   </div>
 
   <div class="panel">
-    <h2>🏆 Top 5 Expert Advisor <span>— per netto realizzato</span></h2>
-    <div id="top5Wrap"><div class="empty">In attesa di dati…</div></div>
+    <h2>🏆 <span data-i18n="top5Title">Top 5 Expert Advisor</span> <span data-i18n="top5Sub">— per netto realizzato</span></h2>
+    <div id="top5Wrap"><div class="empty" data-i18n="waitingData">In attesa di dati…</div></div>
   </div>
 
   <div class="panel">
-    <h2>🤖 Per Expert Advisor <span id="eaSubtitle">— raggruppato per nome breve</span>
+    <h2>🤖 <span data-i18n="perEaTitle">Per Expert Advisor</span> <span id="eaSubtitle" data-i18n="groupPrefix">— raggruppato per nome breve</span>
       <span style="float:right; font-size:0.8rem;">
-        Raggruppa per:
-        <button class="linkbtn" id="groupByPrefix" style="text-decoration:none; font-weight:600;">Nome breve</button> ·
-        <button class="linkbtn" id="groupByComment">Commento intero</button> ·
-        <button class="linkbtn" id="groupByMagic">Magic number</button>
+        <span data-i18n="groupBy">Raggruppa per:</span>
+        <button class="linkbtn" id="groupByPrefix" style="text-decoration:none; font-weight:600;" data-i18n="groupShortName">Nome breve</button> ·
+        <button class="linkbtn" id="groupByComment" data-i18n="groupFullComment">Commento intero</button> ·
+        <button class="linkbtn" id="groupByMagic" data-i18n="groupMagic">Magic number</button>
       </span>
     </h2>
-    <div id="eaWrap"><div class="empty">In attesa di dati…</div></div>
+    <div id="eaWrap"><div class="empty" data-i18n="waitingData">In attesa di dati…</div></div>
   </div>
 
   <div class="panel" id="chartPanel" style="display:none;">
-    <h2 id="chartTitle">Andamento</h2>
+    <h2 id="chartTitle" data-i18n="trendTitle">Andamento</h2>
     <div id="scoreWrap"></div>
     <div id="chartWrap"></div>
     <div id="drawdownWrap" style="margin-top:6px;"></div>
@@ -252,17 +255,17 @@
   </div>
 
   <div class="panel">
-    <h2>📋 Operazioni chiuse <span id="tradesSubtitle"></span></h2>
+    <h2>📋 <span data-i18n="tradesTitle">Operazioni chiuse</span> <span id="tradesSubtitle"></span></h2>
     <div class="filterrow">
-      <div class="fgroup"><label for="magicFilter">EA:</label>
-        <select id="magicFilter"><option value="">Tutti</option></select></div>
-      <div class="fgroup"><label for="commentFilter">Commento:</label>
-        <select id="commentFilter"><option value="">Tutti</option></select></div>
-      <div class="fgroup"><label for="symbolFilter">Simbolo:</label>
-        <select id="symbolFilter"><option value="">Tutti</option></select></div>
+      <div class="fgroup"><label for="magicFilter" data-i18n="filterEa">EA:</label>
+        <select id="magicFilter"><option value="" data-i18n="filterAll">Tutti</option></select></div>
+      <div class="fgroup"><label for="commentFilter" data-i18n="filterComment">Commento:</label>
+        <select id="commentFilter"><option value="" data-i18n="filterAll">Tutti</option></select></div>
+      <div class="fgroup"><label for="symbolFilter" data-i18n="filterSymbol">Simbolo:</label>
+        <select id="symbolFilter"><option value="" data-i18n="filterAll">Tutti</option></select></div>
     </div>
     <div id="tradesWrap">
-      <div class="empty">In attesa di dati…</div>
+      <div class="empty" data-i18n="waitingData">In attesa di dati…</div>
     </div>
   </div>
 </main>
@@ -271,7 +274,7 @@
   <div style="max-width:1500px; width:100%; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:28px;">
     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px;">
       <strong id="modalTitle" style="font-size:1.05rem;"></strong>
-      <button class="linkbtn" id="closeModalBtn">chiudi</button>
+      <button class="linkbtn" id="closeModalBtn" data-i18n="close">chiudi</button>
     </div>
     <div id="modalChartWrap"></div>
     <div id="modalDrawdownWrap" style="margin-top:10px;"></div>
@@ -279,6 +282,150 @@
 </div>
 
 <script>
+  // ====== LINGUA / TRADUZIONI ======
+  let lang = localStorage.getItem("eaDashboard_lang") || "it";
+  const T = {
+    it: {
+      connecting: "connessione in corso…", loadingAccounts: "Caricamento conti…",
+      hideAccount: "Nascondi questo conto", hideAccountTitle: "Nascondi questo conto dall'elenco",
+      showHidden: "mostra conti nascosti", hideHidden: "nascondi conti nascosti",
+      historyLabel: "Storico:", periodToday: "Oggi", period7d: "Ultimi 7 giorni", period30d: "Ultimi 30 giorni",
+      period90d: "Ultimi 90 giorni", period365d: "Ultimo anno", periodAll: "Tutto lo storico",
+      statEquity: "Equity", statBalance: "Saldo", statFloating: "P/L flottante", statDrawdown: "Drawdown",
+      statBroker: "Broker", statLeverage: "Leva",
+      top5Title: "Top 5 Expert Advisor", top5Sub: "— per netto realizzato",
+      perEaTitle: "Per Expert Advisor", groupBy: "Raggruppa per:",
+      groupShortName: "Nome breve", groupFullComment: "Commento intero", groupMagic: "Magic number",
+      groupPrefix: "— raggruppato per nome breve", groupComment: "— raggruppato per commento intero", groupMagicLbl: "— raggruppato per magic number",
+      tradesTitle: "Operazioni chiuse", trendTitle: "Andamento",
+      filterEa: "EA:", filterComment: "Commento:", filterSymbol: "Simbolo:", filterAll: "Tutti",
+      waitingData: "In attesa di dati…", noTradesFound: "Nessuna operazione trovata", noTradesClosed: "Nessuna operazione chiusa ancora",
+      noVisibleAccounts: "Nessun conto visibile", hiddenSuffix: " (nascosto)",
+      periodSelected: "Periodo selezionato: dal", periodTo: "al", updated: "aggiornato",
+      noComment: "nessun commento", moreOthers: "altri",
+      trades: "operazioni", winRate: "win rate",
+      colEa: "EA", colTrades: "Operazioni", colWinRate: "Win rate", colLots: "Lotti tot.", colNet: "Netto",
+      colAvgTrade: "Media/trade", colAvgDuration: "Durata media",
+      colClosedOn: "Chiusa il", colSymbol: "Simbolo", colSide: "Verso", colLotsShort: "Lotti", colComment: "Commento",
+      colMagic: "Magic", colDuration: "Durata",
+      expand: "espandi", close: "chiudi",
+      period: "Periodo", tradesCount: "Operazioni", net: "Netto",
+      legendGain: "operazione in utile", legendLoss: "operazione in perdita",
+      realDdTitle: "Drawdown reale (da DD Monitor, equity flottante inclusa)",
+      daily: "Giornaliero", weekly: "Settimanale", allTime: "All-Time",
+      cumulativeProfit: "Profitto cumulato", bySequence: "per sequenza di operazioni, weekend esclusi",
+      trade: "operazione", cumulative: "cumulato",
+      ddClosedOnly: "Drawdown sulle operazioni chiuse — NON il drawdown reale sull'equity flottante (max",
+      scoreInfo: "Punteggio calcolato localmente con una formula nostra e trasparente — non è lo stesso algoritmo di servizi esterni. Drawdown",
+      ddReal: "reale (DD Monitor)", ddEstimated: "stimato sulle sole chiusure",
+      scoreDiscard: "scarta", scoreWatch: "osserva", scorePromote: "promuovi",
+      subProfitability: "Profittabilità", subRisk: "Rischio", subConsistency: "Consistenza", subSignificance: "Significatività",
+      penaltyText1: "Base", penaltyText2: "(penalità per perdita netta) =",
+      penaltyText3: "La perdita netta da sola pesa molto: finché il risultato è negativo, il punteggio resta comunque limitato.",
+      pros: "A favore", cons: "Contro", criteria: "Criteri", ofWord: "di",
+      critRuntime: "Storico ≥ 30 giorni", critTrades: "Operazioni ≥ 30", critNoLoss: "Nessuna perdita netta",
+      critDD: "Drawdown ≤ 30%", critPF: "Profit factor ≥ 1", critScore: "Punteggio ≥ 45",
+      riskFlagsIntro: "Caratteristiche di rischio (indicative, dedotte dai commenti/lotti — \"non attivo\" non significa \"escluso\", solo che non è stato rilevato):",
+      detected: "rilevato", notDetected: "non rilevato",
+      flagGrid: "Grid", flagMartingale: "Martingale", flagAveraging: "Averaging down", flagHedging: "Hedging", flagFixedSL: "Stop loss fisso",
+      pfSolid: "Profit factor solido", regularResults: "Risultati regolari nel tempo, settimana dopo settimana",
+      broadHistory: "Storico ampio", overDays: "operazioni su", days: "giorni",
+      containedDD: "Drawdown contenuto",
+      netLossWarn: "Il conto è in perdita netta nel periodo osservato — questo da solo pesa molto sul giudizio",
+      fewTrades: "operazioni finora: dato ancora provvisorio",
+      shortHistory: "giorni di storico: periodo di osservazione breve",
+      highDD: "Drawdown elevato",
+      pfBelow1: "Profit factor sotto 1",
+      noStrengths: "Nessun punto di forza chiaro emerso finora",
+      noWeaknesses: "Nessuna criticità rilevante rilevata",
+      buyLbl: "Buy", sellLbl: "Sell", durD: "g"
+    },
+    en: {
+      connecting: "connecting…", loadingAccounts: "Loading accounts…",
+      hideAccount: "Hide this account", hideAccountTitle: "Hide this account from the list",
+      showHidden: "show hidden accounts", hideHidden: "hide hidden accounts",
+      historyLabel: "History:", periodToday: "Today", period7d: "Last 7 days", period30d: "Last 30 days",
+      period90d: "Last 90 days", period365d: "Last year", periodAll: "All history",
+      statEquity: "Equity", statBalance: "Balance", statFloating: "Floating P/L", statDrawdown: "Drawdown",
+      statBroker: "Broker", statLeverage: "Leverage",
+      top5Title: "Top 5 Expert Advisors", top5Sub: "— by net profit",
+      perEaTitle: "By Expert Advisor", groupBy: "Group by:",
+      groupShortName: "Short name", groupFullComment: "Full comment", groupMagic: "Magic number",
+      groupPrefix: "— grouped by short name", groupComment: "— grouped by full comment", groupMagicLbl: "— grouped by magic number",
+      tradesTitle: "Closed trades", trendTitle: "Performance",
+      filterEa: "EA:", filterComment: "Comment:", filterSymbol: "Symbol:", filterAll: "All",
+      waitingData: "Waiting for data…", noTradesFound: "No trades found", noTradesClosed: "No trades closed yet",
+      noVisibleAccounts: "No visible accounts", hiddenSuffix: " (hidden)",
+      periodSelected: "Selected period: from", periodTo: "to", updated: "updated",
+      noComment: "no comment", moreOthers: "more",
+      trades: "trades", winRate: "win rate",
+      colEa: "EA", colTrades: "Trades", colWinRate: "Win rate", colLots: "Total lots", colNet: "Net",
+      colAvgTrade: "Avg/trade", colAvgDuration: "Avg duration",
+      colClosedOn: "Closed on", colSymbol: "Symbol", colSide: "Side", colLotsShort: "Lots", colComment: "Comment",
+      colMagic: "Magic", colDuration: "Duration",
+      expand: "expand", close: "close",
+      period: "Period", tradesCount: "Trades", net: "Net",
+      legendGain: "winning trade", legendLoss: "losing trade",
+      realDdTitle: "Real drawdown (from DD Monitor, includes floating equity)",
+      daily: "Daily", weekly: "Weekly", allTime: "All-Time",
+      cumulativeProfit: "Cumulative profit", bySequence: "by trade sequence, weekends excluded",
+      trade: "trade", cumulative: "cumulative",
+      ddClosedOnly: "Drawdown on closed trades only — NOT the real drawdown on floating equity (max",
+      scoreInfo: "Score computed locally with our own transparent formula — not the same algorithm as external services. Drawdown",
+      ddReal: "real (DD Monitor)", ddEstimated: "estimated from closed trades only",
+      scoreDiscard: "discard", scoreWatch: "watch", scorePromote: "promote",
+      subProfitability: "Profitability", subRisk: "Risk", subConsistency: "Consistency", subSignificance: "Significance",
+      penaltyText1: "Base", penaltyText2: "(net loss penalty) =",
+      penaltyText3: "Net loss alone weighs heavily: as long as the result is negative, the score stays limited.",
+      pros: "Pros", cons: "Cons", criteria: "Criteria", ofWord: "of",
+      critRuntime: "History ≥ 30 days", critTrades: "Trades ≥ 30", critNoLoss: "No net loss",
+      critDD: "Drawdown ≤ 30%", critPF: "Profit factor ≥ 1", critScore: "Score ≥ 45",
+      riskFlagsIntro: "Risk characteristics (indicative, inferred from comments/lot sizes — \"not detected\" doesn't mean \"excluded\", only that no sign was found):",
+      detected: "detected", notDetected: "not detected",
+      flagGrid: "Grid", flagMartingale: "Martingale", flagAveraging: "Averaging down", flagHedging: "Hedging", flagFixedSL: "Fixed stop loss",
+      pfSolid: "Solid profit factor", regularResults: "Regular results over time, week after week",
+      broadHistory: "Broad history", overDays: "trades over", days: "days",
+      containedDD: "Contained drawdown",
+      netLossWarn: "The account is net negative for the observed period — this alone weighs heavily on the score",
+      fewTrades: "trades so far: still provisional",
+      shortHistory: "days of history: short observation window",
+      highDD: "High drawdown",
+      pfBelow1: "Profit factor below 1",
+      noStrengths: "No clear strength has emerged so far",
+      noWeaknesses: "No significant weakness detected",
+      buyLbl: "Buy", sellLbl: "Sell", durD: "d"
+    }
+  };
+  function tr(key){ return T[lang][key] ?? key; }
+  function locale(){ return lang === "it" ? "it-IT" : "en-US"; }
+
+  function applyStaticTranslations(){
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = tr(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-title]").forEach(el => { el.title = tr(el.dataset.i18nTitle); });
+    document.getElementById("langToggle").textContent = lang === "it" ? "EN" : "IT";
+  }
+  applyStaticTranslations();
+
+  document.getElementById("langToggle").addEventListener("click", () => {
+    lang = lang === "it" ? "en" : "it";
+    localStorage.setItem("eaDashboard_lang", lang);
+    applyStaticTranslations();
+    document.getElementById("showHiddenBtn").textContent = showHiddenToo ? tr("hideHidden") : tr("showHidden");
+    setGroupMode(groupMode); // aggiorna anche il sottotitolo del raggruppamento
+    if(allTrades){
+      renderPeriodLabel(allTrades);
+      renderFilterOptions(allTrades);
+      renderTop5(allTrades);
+      renderEaSummary(allTrades);
+      renderTrades(applyFilters(allTrades));
+      if(currentChartTrades && currentChartTrades.length && document.getElementById("chartPanel").style.display !== "none"){
+        renderChartPanel(currentChartName, currentChartTrades);
+      }
+    }
+    renderAccountSelect();
+  });
+
   // ====== CONFIGURA QUI ======
   const firebaseConfig = {
     apiKey: "AIzaSyACC2UH3ICtaUcOtll4Rvfw9ScNH9iNhWc",
@@ -295,13 +442,13 @@
   const db = firebase.database();
 
   const fmt = (n, c) => (n === undefined || n === null) ? "—" :
-    new Intl.NumberFormat("it-IT", {style: c ? "currency" : "decimal", currency: c || undefined, maximumFractionDigits: 2}).format(n);
-  const fmtDate = (unixSec) => new Date(unixSec * 1000).toLocaleString("it-IT");
+    new Intl.NumberFormat(locale(), {style: c ? "currency" : "decimal", currency: c || undefined, maximumFractionDigits: 2}).format(n);
+  const fmtDate = (unixSec) => new Date(unixSec * 1000).toLocaleString(locale());
   const fmtDuration = (sec) => {
     if(!sec || sec <= 0) return "—";
     sec = Math.round(sec);
     const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
-    if(d > 0) return `${d}g ${h}h`;
+    if(d > 0) return `${d}${tr("durD")} ${h}h`;
     if(h > 0) return `${h}h ${m}m`;
     if(m > 0) return `${m}m`;
     return `${sec}s`;
@@ -357,8 +504,8 @@
     const hidden = getHidden();
     const ids = showHiddenToo ? allAccountIds : allAccountIds.filter(id => !hidden.includes(id));
     accountSelect.innerHTML = ids.length
-      ? ids.map(id => `<option value="${id}">${id}${hidden.includes(id) ? " (nascosto)" : ""}</option>`).join("")
-      : "<option>Nessun conto visibile</option>";
+      ? ids.map(id => `<option value="${id}">${id}${hidden.includes(id) ? tr("hiddenSuffix") : ""}</option>`).join("")
+      : `<option>${tr("noVisibleAccounts")}</option>`;
     if(currentAccount && ids.includes(currentAccount)) accountSelect.value = currentAccount;
   }
 
@@ -377,7 +524,7 @@
 
   document.getElementById("showHiddenBtn").addEventListener("click", (e) => {
     showHiddenToo = !showHiddenToo;
-    e.target.textContent = showHiddenToo ? "nascondi conti nascosti" : "mostra conti nascosti";
+    e.target.textContent = showHiddenToo ? tr("hideHidden") : tr("showHidden");
     renderAccountSelect();
   });
 
@@ -414,7 +561,7 @@
       document.getElementById("stBroker").textContent = s.broker || "—";
       document.getElementById("headerBroker").textContent = s.broker ? `— ${s.broker}` : "";
       document.getElementById("stLeverage").textContent = s.leverage ? `1:${s.leverage}` : "—";
-      document.getElementById("lastUpdate").textContent = "aggiornato " + fmtDate(s.updated_at);
+      document.getElementById("lastUpdate").textContent = tr("updated") + " " + fmtDate(s.updated_at);
     });
 
     const startTs = periodStartTimestamp(currentPeriod);
@@ -436,13 +583,13 @@
 
   function renderPeriodLabel(trades){
     const el = document.getElementById("periodRangeLabel");
-    const fmtD = ts => new Date(ts * 1000).toLocaleDateString("it-IT");
+    const fmtD = ts => new Date(ts * 1000).toLocaleDateString(locale());
     const now = Math.floor(Date.now() / 1000);
     let startTs = periodStartTimestamp(currentPeriod);
     if(currentPeriod === "all"){
       startTs = trades.length ? Math.min(...trades.map(t => t.closed_at)) : now;
     }
-    el.textContent = `Periodo selezionato: dal ${fmtD(startTs)} al ${fmtD(now)}`;
+    el.textContent = `${tr("periodSelected")} ${fmtD(startTs)} ${tr("periodTo")} ${fmtD(now)}`;
   }
 
   function applyFilters(trades){
@@ -470,7 +617,7 @@
     const comments = [...new Set(trades.map(eaLabel))].sort();
     const symbols = [...new Set(trades.map(t => t.symbol).filter(Boolean))].sort();
     const rebuild = (el, values, current, labelFn) => {
-      el.innerHTML = '<option value="">Tutti</option>' + values.map(v => `<option value="${v}">${labelFn ? labelFn(v) : v}</option>`).join("");
+      el.innerHTML = `<option value="">${tr("filterAll")}</option>` + values.map(v => `<option value="${v}">${labelFn ? labelFn(v) : v}</option>`).join("");
       el.value = values.includes(current) ? current : "";
     };
     rebuild(magicFilter, magics, filters.magic, v => `Magic ${v}`);
@@ -484,12 +631,12 @@
   const groupByPrefixBtn = document.getElementById("groupByPrefix");
   const groupByCommentBtn = document.getElementById("groupByComment");
   const groupByMagicBtn = document.getElementById("groupByMagic");
-  const groupLabels = { prefix: "— raggruppato per nome breve", comment: "— raggruppato per commento intero", magic: "— raggruppato per magic number" };
   function setGroupMode(mode){
     groupMode = mode;
     [["prefix",groupByPrefixBtn],["comment",groupByCommentBtn],["magic",groupByMagicBtn]].forEach(([m,btn]) => {
       btn.style.fontWeight = mode === m ? "600" : "400";
     });
+    const groupLabels = { prefix: tr("groupPrefix"), comment: tr("groupComment"), magic: tr("groupMagicLbl") };
     document.getElementById("eaSubtitle").textContent = groupLabels[mode];
     renderEaSummary(allTrades);
     renderTop5(allTrades);
@@ -521,7 +668,7 @@
       if(groupMode === "magic") others = [...g.comments];
       else if(groupMode === "prefix") others = [...g.magics].map(m => `Magic ${m}`);
       else others = [...g.magics].map(m => `Magic ${m}`);
-      g.subtitle = others.length ? (others.length > 3 ? others.slice(0,3).join(", ") + ` +${others.length-3} altri` : others.join(", ")) : (groupMode === "magic" ? "nessun commento" : "");
+      g.subtitle = others.length ? (others.length > 3 ? others.slice(0,3).join(", ") + ` +${others.length-3} ${tr("moreOthers")}` : others.join(", ")) : (groupMode === "magic" ? tr("noComment") : "");
       return g;
     });
   }
@@ -529,11 +676,11 @@
   function renderTop5(trades){
     const wrap = document.getElementById("top5Wrap");
     const groups = groupByEa(trades).sort((a,b) => b.netSum - a.netSum).slice(0, 5);
-    if(!groups.length){ wrap.innerHTML = '<div class="empty">Nessuna operazione chiusa ancora</div>'; return; }
+    if(!groups.length){ wrap.innerHTML = `<div class="empty">${tr("noTradesClosed")}</div>`; return; }
     wrap.innerHTML = groups.map((g, i) => `
       <div class="top5row" data-name="${g.name}">
         <div class="top5rank">${i+1}</div>
-        <div class="top5name">${g.name}<span class="sub">${g.count} operazioni · win rate ${((g.wins/g.count)*100).toFixed(0)}% ${g.subtitle ? "· " + g.subtitle : ""}</span></div>
+        <div class="top5name">${g.name}<span class="sub">${g.count} ${tr("trades")} · ${tr("winRate")} ${((g.wins/g.count)*100).toFixed(0)}% ${g.subtitle ? "· " + g.subtitle : ""}</span></div>
         <div class="top5net num" style="color:${g.netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(g.netSum)}</div>
       </div>`).join("");
     wrap.querySelectorAll(".top5row").forEach(el => el.addEventListener("click", () => showEaDetail(el.dataset.name)));
@@ -544,16 +691,16 @@
   function renderEaSummary(trades){
     const wrap = document.getElementById("eaWrap");
     const groups = groupByEa(trades);
-    if(!groups.length){ wrap.innerHTML = '<div class="empty">Nessuna operazione chiusa ancora</div>'; return; }
+    if(!groups.length){ wrap.innerHTML = `<div class="empty">${tr("noTradesClosed")}</div>`; return; }
 
     const cols = [
-      {key:"name", label:"EA"},
-      {key:"count", label:"Operazioni", num:true},
-      {key:"winrate", label:"Win rate", num:true},
-      {key:"lots", label:"Lotti tot.", num:true},
-      {key:"net", label:"Netto", num:true},
-      {key:"avg", label:"Media/trade", num:true},
-      {key:"duration", label:"Durata media", num:true}
+      {key:"name", label:tr("colEa")},
+      {key:"count", label:tr("colTrades"), num:true},
+      {key:"winrate", label:tr("colWinRate"), num:true},
+      {key:"lots", label:tr("colLots"), num:true},
+      {key:"net", label:tr("colNet"), num:true},
+      {key:"avg", label:tr("colAvgTrade"), num:true},
+      {key:"duration", label:tr("colAvgDuration"), num:true}
     ];
     const getVal = (g, key) => {
       if(key === "winrate") return g.wins / g.count;
@@ -592,7 +739,7 @@
         renderEaSummary(trades);
       });
     });
-    wrap.querySelectorAll("tr.clickable").forEach(tr => tr.addEventListener("click", () => showEaDetail(tr.dataset.name)));
+    wrap.querySelectorAll("tr.clickable").forEach(rowEl => rowEl.addEventListener("click", () => showEaDetail(rowEl.dataset.name)));
   }
 
   let sortState = { key: "closed_at", dir: -1 };
@@ -662,13 +809,13 @@
     let maxDrawdownPct, ddSource;
     if(realDdEntries.length){
       maxDrawdownPct = Math.max(...realDdEntries.map(e => e.max_dd_alltime_pct ?? 0));
-      ddSource = "reale (DD Monitor)";
+      ddSource = tr("ddReal");
     } else {
       const series = buildSeries(trades);
       const peakDd = Math.max(...series.map(p => p.dd), 0);
       const peakVal = Math.max(...series.map(p => p.y), 0.0001);
       maxDrawdownPct = peakVal > 0 ? (peakDd / peakVal) * 100 : 0;
-      ddSource = "stimato sulle sole chiusure";
+      ddSource = tr("ddEstimated");
     }
 
     // consistenza: quota di settimane con esito netto positivo
@@ -701,31 +848,31 @@
 
     let label;
     if(netLoss || currentScore < 45) label = "discard";
-    else if(currentScore < 70) label = "osserva";
-    else label = "promuovi";
+    else if(currentScore < 70) label = "watch";
+    else label = "promote";
 
     const criteria = [
-      { label: "Storico ≥ 30 giorni", pass: daysActive >= 30, value: `${daysActive}g` },
-      { label: "Operazioni ≥ 30", pass: count >= 30, value: `${count}` },
-      { label: "Nessuna perdita netta", pass: !netLoss, value: fmt(netProfit, accountCurrency) },
-      { label: "Drawdown ≤ 30%", pass: maxDrawdownPct <= 30, value: `${maxDrawdownPct.toFixed(1)}%` },
-      { label: "Profit factor ≥ 1", pass: profitFactor >= 1, value: profitFactor >= 99 ? "∞" : profitFactor.toFixed(2) },
-      { label: "Punteggio ≥ 45", pass: currentScore >= 45, value: `${currentScore}` }
+      { label: tr("critRuntime"), pass: daysActive >= 30, value: `${daysActive}${tr("durD")}` },
+      { label: tr("critTrades"), pass: count >= 30, value: `${count}` },
+      { label: tr("critNoLoss"), pass: !netLoss, value: fmt(netProfit, accountCurrency) },
+      { label: tr("critDD"), pass: maxDrawdownPct <= 30, value: `${maxDrawdownPct.toFixed(1)}%` },
+      { label: tr("critPF"), pass: profitFactor >= 1, value: profitFactor >= 99 ? "∞" : profitFactor.toFixed(2) },
+      { label: tr("critScore"), pass: currentScore >= 45, value: `${currentScore}` }
     ];
     const criteriaMet = criteria.filter(c => c.pass).length;
 
     const speaksFor = [], speaksAgainst = [];
-    if(profitFactor >= 1.3) speaksFor.push(`Profit factor solido (${profitFactor.toFixed(2)})`);
-    if(consistencyScore >= 70) speaksFor.push("Risultati regolari nel tempo, settimana dopo settimana");
-    if(significanceScore >= 70) speaksFor.push(`Storico ampio (${count} operazioni su ${daysActive} giorni)`);
-    if(maxDrawdownPct <= 10) speaksFor.push("Drawdown contenuto");
-    if(netLoss) speaksAgainst.push("Il conto è in perdita netta nel periodo osservato — questo da solo pesa molto sul giudizio");
-    if(count < 30) speaksAgainst.push(`Solo ${count} operazioni finora: dato ancora provvisorio`);
-    if(daysActive < 30) speaksAgainst.push(`Solo ${daysActive} giorni di storico: periodo di osservazione breve`);
-    if(maxDrawdownPct > 30) speaksAgainst.push(`Drawdown elevato (${maxDrawdownPct.toFixed(1)}%)`);
-    if(profitFactor < 1 && !netLoss) speaksAgainst.push("Profit factor sotto 1");
-    if(!speaksFor.length) speaksFor.push("Nessun punto di forza chiaro emerso finora");
-    if(!speaksAgainst.length) speaksAgainst.push("Nessuna criticità rilevante rilevata");
+    if(profitFactor >= 1.3) speaksFor.push(`${tr("pfSolid")} (${profitFactor.toFixed(2)})`);
+    if(consistencyScore >= 70) speaksFor.push(tr("regularResults"));
+    if(significanceScore >= 70) speaksFor.push(`${tr("broadHistory")} (${count} ${tr("overDays")} ${daysActive} ${tr("days")})`);
+    if(maxDrawdownPct <= 10) speaksFor.push(tr("containedDD"));
+    if(netLoss) speaksAgainst.push(tr("netLossWarn"));
+    if(count < 30) speaksAgainst.push(`${count} ${tr("fewTrades")}`);
+    if(daysActive < 30) speaksAgainst.push(`${daysActive} ${tr("shortHistory")}`);
+    if(maxDrawdownPct > 30) speaksAgainst.push(`${tr("highDD")} (${maxDrawdownPct.toFixed(1)}%)`);
+    if(profitFactor < 1 && !netLoss) speaksAgainst.push(tr("pfBelow1"));
+    if(!speaksFor.length) speaksFor.push(tr("noStrengths"));
+    if(!speaksAgainst.length) speaksAgainst.push(tr("noWeaknesses"));
 
     // euristiche stile-strategia, SOLO indicative: si basano sul testo del commento e sulla variabilità dei lotti,
     // non su un'analisi reale della logica dell'EA — "non determinabile" quando non c'è alcun indizio, non "assente".
@@ -738,11 +885,11 @@
     const taggedCount = trades.filter(t => t.close_reason === "sl" || t.close_reason === "tp").length;
 
     const riskFlags = [
-      { label: "Grid", on: hasKw(/grid/) },
-      { label: "Martingale", on: hasKw(/martingal/) || lotRatio > 3 },
-      { label: "Averaging down", on: hasKw(/averag|dca|recover/) },
-      { label: "Hedging", on: hasKw(/hedg/) },
-      { label: "Stop loss fisso", on: taggedCount > 0 && (taggedCount / count) > 0.5 }
+      { label: tr("flagGrid"), on: hasKw(/grid/) },
+      { label: tr("flagMartingale"), on: hasKw(/martingal/) || lotRatio > 3 },
+      { label: tr("flagAveraging"), on: hasKw(/averag|dca|recover/) },
+      { label: tr("flagHedging"), on: hasKw(/hedg/) },
+      { label: tr("flagFixedSL"), on: taggedCount > 0 && (taggedCount / count) > 0.5 }
     ];
 
     return {
@@ -774,40 +921,40 @@
     return `
       <div style="margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid var(--border);">
         <div style="font-size:0.72rem; color:var(--muted); margin-bottom:10px;">
-          ℹ️ Punteggio calcolato localmente con una formula nostra e trasparente — non è lo stesso algoritmo di servizi esterni. Drawdown ${s.ddSource}.
+          ℹ️ ${tr("scoreInfo")} ${s.ddSource}.
         </div>
         <div class="scorebox">
           <div>
             <div class="scorenum" style="color:${barColor}">${s.currentScore}</div>
-            <span class="scorebadge ${s.label}">${s.label}</span>
+            <span class="scorebadge ${s.label}">${tr("score" + s.label.charAt(0).toUpperCase() + s.label.slice(1))}</span>
             <div class="scorebar"><div class="marker" style="left:${s.currentScore}%"></div></div>
           </div>
           <div class="subscores">
-            ${subrow("Profittabilità", s.profitabilityScore)}
-            ${subrow("Rischio", s.riskScore)}
-            ${subrow("Consistenza", s.consistencyScore)}
-            ${subrow("Significatività", s.significanceScore)}
+            ${subrow(tr("subProfitability"), s.profitabilityScore)}
+            ${subrow(tr("subRisk"), s.riskScore)}
+            ${subrow(tr("subConsistency"), s.consistencyScore)}
+            ${subrow(tr("subSignificance"), s.significanceScore)}
           </div>
         </div>
 
         ${s.netLoss ? `<div style="font-size:0.85rem; color:var(--muted); margin-bottom:14px;">
-          Base ${s.baseScore} − ${s.penalty} (penalità per perdita netta) = <b style="color:${barColor}">${s.currentScore}</b>.
-          La perdita netta da sola pesa molto: finché il risultato è negativo, il punteggio resta comunque limitato.
+          ${tr("penaltyText1")} ${s.baseScore} − ${s.penalty} ${tr("penaltyText2")} <b style="color:${barColor}">${s.currentScore}</b>.
+          ${tr("penaltyText3")}
         </div>` : ""}
 
         <div class="prosconswrap">
-          <div class="for"><h4>A favore</h4><ul>${s.speaksFor.map(x=>`<li>${x}</li>`).join("")}</ul></div>
-          <div class="against"><h4 style="color:var(--loss)">Contro</h4><ul>${s.speaksAgainst.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+          <div class="for"><h4>${tr("pros")}</h4><ul>${s.speaksFor.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+          <div class="against"><h4 style="color:var(--loss)">${tr("cons")}</h4><ul>${s.speaksAgainst.map(x=>`<li>${x}</li>`).join("")}</ul></div>
         </div>
 
         <table class="criteriatable">
-          <tr><td colspan="3" style="color:var(--muted); font-size:0.76rem; padding-top:0;">Criteri (${s.criteriaMet} di ${s.criteria.length})</td></tr>
+          <tr><td colspan="3" style="color:var(--muted); font-size:0.76rem; padding-top:0;">${tr("criteria")} (${s.criteriaMet} ${tr("ofWord")} ${s.criteria.length})</td></tr>
           ${criteriaRows}
         </table>
 
-        <div style="font-size:0.72rem; color:var(--muted); margin-top:12px;">Caratteristiche di rischio (indicative, dedotte dai commenti/lotti — "non attivo" non significa "escluso", solo che non è stato rilevato):</div>
+        <div style="font-size:0.72rem; color:var(--muted); margin-top:12px;">${tr("riskFlagsIntro")}</div>
         <div class="riskflags">
-          ${s.riskFlags.map(f => `<span class="riskflag ${f.on?'on':''}">${f.label} ${f.on?'· rilevato':'· non rilevato'}</span>`).join("")}
+          ${s.riskFlags.map(f => `<span class="riskflag ${f.on?'on':''}">${f.label} · ${f.on?tr("detected"):tr("notDetected")}</span>`).join("")}
         </div>
       </div>`;
   }
@@ -817,9 +964,9 @@
     currentChartTrades = trades;
     currentChartName = name;
     document.getElementById("chartTitle").innerHTML =
-      `📊 Andamento — ${name} ` +
-      `<button class="linkbtn" id="expandChartBtn" style="float:right; margin-left:14px;">espandi</button>` +
-      `<button class="linkbtn" id="closeChartBtn2" style="float:right;">chiudi</button>`;
+      `📊 ${tr("trendTitle")} — ${name} ` +
+      `<button class="linkbtn" id="expandChartBtn" style="float:right; margin-left:14px;">${tr("expand")}</button>` +
+      `<button class="linkbtn" id="closeChartBtn2" style="float:right;">${tr("close")}</button>`;
     document.getElementById("chartWrap").innerHTML = drawEquitySvg(trades, accountCurrency, 260);
     document.getElementById("drawdownWrap").innerHTML = drawDrawdownSvg(trades, accountCurrency, 90);
     document.getElementById("realDdWrap").innerHTML = renderRealDdBlock(trades);
@@ -831,10 +978,10 @@
       const sorted = trades.slice().sort((a,b) => a.closed_at - b.closed_at);
       const netSum = trades.reduce((s,t) => s + (t.net ?? t.profit ?? 0), 0);
       document.getElementById("chartSummary").innerHTML = `
-        <span>Periodo: <b>${fmtDate(sorted[0].closed_at)} → ${fmtDate(sorted[sorted.length-1].closed_at)}</b></span>
-        <span>Operazioni: <b>${trades.length}</b></span>
-        <span>Netto: <b style="color:${netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(netSum)}</b></span>
-        <span><span style="color:var(--gain)">●</span> operazione in utile &nbsp; <span style="color:var(--loss)">●</span> operazione in perdita</span>`;
+        <span>${tr("period")}: <b>${fmtDate(sorted[0].closed_at)} → ${fmtDate(sorted[sorted.length-1].closed_at)}</b></span>
+        <span>${tr("tradesCount")}: <b>${trades.length}</b></span>
+        <span>${tr("net")}: <b style="color:${netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(netSum)}</b></span>
+        <span><span style="color:var(--gain)">●</span> ${tr("legendGain")} &nbsp; <span style="color:var(--loss)">●</span> ${tr("legendLoss")}</span>`;
     } else {
       document.getElementById("chartSummary").innerHTML = "";
     }
@@ -849,17 +996,17 @@
     const maxPct = (key) => Math.max(...entries.map(e => e[key] ?? 0));
     return `
       <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
-        <div style="font-size:0.78rem; color:var(--muted); margin-bottom:8px;">Drawdown reale (da DD Monitor, equity flottante inclusa)</div>
+        <div style="font-size:0.78rem; color:var(--muted); margin-bottom:8px;">${tr("realDdTitle")}</div>
         <div style="display:flex; gap:28px; flex-wrap:wrap; font-size:0.88rem;">
-          <span>Giornaliero: <b style="color:var(--loss)">${fmt(sum("max_dd_daily"), accountCurrency)} (${maxPct("max_dd_daily_pct").toFixed(2)}%)</b></span>
-          <span>Settimanale: <b style="color:var(--loss)">${fmt(sum("max_dd_weekly"), accountCurrency)} (${maxPct("max_dd_weekly_pct").toFixed(2)}%)</b></span>
-          <span>All-Time: <b style="color:var(--loss)">${fmt(sum("max_dd_alltime"), accountCurrency)} (${maxPct("max_dd_alltime_pct").toFixed(2)}%)</b></span>
+          <span>${tr("daily")}: <b style="color:var(--loss)">${fmt(sum("max_dd_daily"), accountCurrency)} (${maxPct("max_dd_daily_pct").toFixed(2)}%)</b></span>
+          <span>${tr("weekly")}: <b style="color:var(--loss)">${fmt(sum("max_dd_weekly"), accountCurrency)} (${maxPct("max_dd_weekly_pct").toFixed(2)}%)</b></span>
+          <span>${tr("allTime")}: <b style="color:var(--loss)">${fmt(sum("max_dd_alltime"), accountCurrency)} (${maxPct("max_dd_alltime_pct").toFixed(2)}%)</b></span>
         </div>
       </div>`;
   }
 
   function openChartModal(){
-    document.getElementById("modalTitle").textContent = "📊 Andamento — " + currentChartName;
+    document.getElementById("modalTitle").textContent = "📊 " + tr("trendTitle") + " — " + currentChartName;
     document.getElementById("modalChartWrap").innerHTML = drawEquitySvg(currentChartTrades, accountCurrency, 460, 1400);
     document.getElementById("modalDrawdownWrap").innerHTML = drawDrawdownSvg(currentChartTrades, accountCurrency, 150, 1400);
     document.getElementById("chartModal").style.display = "flex";
@@ -886,7 +1033,7 @@
   }
 
   function drawEquitySvg(trades, currency, height, width){
-    if(!trades.length) return '<div class="empty">Nessuna operazione nel periodo selezionato</div>';
+    if(!trades.length) return `<div class="empty">${tr("noTradesFound")}</div>`;
     const points = buildSeries(trades);
 
     const W = width || 760, H = height || 260;
@@ -922,14 +1069,14 @@
       const cx = scaleX(p.i).toFixed(1), cy = scaleY(p.y).toFixed(1);
       const dotColor = p.net >= 0 ? "#3ddc84" : "#ff5c5c";
       dots += `<circle cx="${cx}" cy="${cy}" r="2.6" fill="${dotColor}" stroke="#12161c" stroke-width="1">` +
-              `<title>${new Date(p.closed_at*1000).toLocaleString("it-IT")} · operazione ${p.net>=0?'+':''}${fmt(p.net, currency)} · cumulato ${fmt(p.y, currency)}</title></circle>`;
+              `<title>${new Date(p.closed_at*1000).toLocaleString(locale())} · ${tr("trade")} ${p.net>=0?'+':''}${fmt(p.net, currency)} · ${tr("cumulative")} ${fmt(p.y, currency)}</title></circle>`;
     });
 
-    const xLabelStart = new Date(points[0].closed_at*1000).toLocaleDateString("it-IT");
-    const xLabelEnd = new Date(points[points.length-1].closed_at*1000).toLocaleDateString("it-IT");
+    const xLabelStart = new Date(points[0].closed_at*1000).toLocaleDateString(locale());
+    const xLabelEnd = new Date(points[points.length-1].closed_at*1000).toLocaleDateString(locale());
 
     return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;">
-      <text x="${padL}" y="16" font-size="11" fill="#8b94a1">Profitto cumulato (${currency || ''}) — per sequenza di operazioni, weekend esclusi</text>
+      <text x="${padL}" y="16" font-size="11" fill="#8b94a1">${tr("cumulativeProfit")} (${currency || ''}) — ${tr("bySequence")}</text>
       ${gridLines}
       ${gridLabels}
       <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="#5b8def" stroke-width="1" stroke-dasharray="3,3"/>
@@ -957,7 +1104,7 @@
     const maxDdPoint = points.reduce((m,p) => p.dd > m.dd ? p : m, points[0]);
 
     return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;">
-      <text x="${padL}" y="12" font-size="11" fill="#8b94a1">Drawdown sulle operazioni chiuse — NON il drawdown reale sull'equity flottante (max ${fmt(maxDd, currency)})</text>
+      <text x="${padL}" y="12" font-size="11" fill="#8b94a1">${tr("ddClosedOnly")} ${fmt(maxDd, currency)})</text>
       <path d="${areaPath}" fill="#ff5c5c" opacity="0.18" stroke="none"/>
       <path d="${path}" fill="none" stroke="#ff5c5c" stroke-width="1.5"/>
     </svg>`;
@@ -965,25 +1112,25 @@
 
   function renderTrades(trades){
     const wrap = document.getElementById("tradesWrap");
-    document.getElementById("tradesSubtitle").textContent = `— ${trades.length} operazioni`;
-    if(!trades.length){ wrap.innerHTML = '<div class="empty">Nessuna operazione trovata</div>'; return; }
+    document.getElementById("tradesSubtitle").textContent = `— ${trades.length} ${tr("trades")}`;
+    if(!trades.length){ wrap.innerHTML = `<div class="empty">${tr("noTradesFound")}</div>`; return; }
 
     const cols = [
-      {key:"closed_at", label:"Chiusa il"},
-      {key:"symbol", label:"Simbolo"},
-      {key:"type", label:"Verso"},
-      {key:"volume", label:"Lotti", num:true},
-      {key:"comment", label:"Commento"},
-      {key:"magic", label:"Magic", num:true},
-      {key:"duration_sec", label:"Durata", num:true},
-      {key:"net", label:"Netto", num:true}
+      {key:"closed_at", label:tr("colClosedOn")},
+      {key:"symbol", label:tr("colSymbol")},
+      {key:"type", label:tr("colSide")},
+      {key:"volume", label:tr("colLotsShort"), num:true},
+      {key:"comment", label:tr("colComment")},
+      {key:"magic", label:tr("colMagic"), num:true},
+      {key:"duration_sec", label:tr("colDuration"), num:true},
+      {key:"net", label:tr("colNet"), num:true}
     ];
     const sorted = sortTrades(trades);
     const rows = sorted.slice(0, 150).map(t => `
       <tr>
         <td>${fmtDate(t.closed_at)}</td>
         <td>${t.symbol || ""}</td>
-        <td>${t.type === "buy_close" ? "Buy" : "Sell"}</td>
+        <td>${t.type === "buy_close" ? tr("buyLbl") : tr("sellLbl")}</td>
         <td class="num">${(t.volume ?? 0).toFixed(2)}</td>
         <td>${t.comment || ""}</td>
         <td class="num">${t.magic ?? 0}</td>
