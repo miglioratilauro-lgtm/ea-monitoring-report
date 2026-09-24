@@ -68,6 +68,9 @@
     border-radius:8px; padding:7px 12px; font-size:0.8rem; cursor:pointer;
   }
   .iconbtn:hover{ color:var(--text); border-color:#3a4453; }
+  .iconbtn:disabled{ opacity:0.4; cursor:not-allowed; }
+  .iconbtn:disabled:hover{ color:var(--muted); border-color:var(--border); }
+  .custommark{ color:var(--gold); font-size:0.78em; }
   .linkbtn{
     background:none; border:none; color:var(--muted); font-size:0.78rem;
     text-decoration:underline; cursor:pointer; padding:0;
@@ -338,7 +341,9 @@
       pfBelow1: "Profit factor sotto 1",
       noStrengths: "Nessun punto di forza chiaro emerso finora",
       noWeaknesses: "Nessuna criticità rilevante rilevata",
-      buyLbl: "Buy", sellLbl: "Sell", durD: "g"
+      buyLbl: "Buy", sellLbl: "Sell", durD: "g",
+      mergeSelected: "Unisci righe selezionate in un gruppo", manageGroups: "gestisci gruppi personalizzati",
+      customGroupPrompt: 'Nome del gruppo unificato (es. "TopEAstore.com"):', customGroupBadge: "Gruppo personalizzato"
     },
     en: {
       connecting: "connecting…", loadingAccounts: "Loading accounts…",
@@ -393,7 +398,9 @@
       pfBelow1: "Profit factor below 1",
       noStrengths: "No clear strength has emerged so far",
       noWeaknesses: "No significant weakness detected",
-      buyLbl: "Buy", sellLbl: "Sell", durD: "d"
+      buyLbl: "Buy", sellLbl: "Sell", durD: "d",
+      mergeSelected: "Merge selected rows into a group", manageGroups: "manage custom groups",
+      customGroupPrompt: 'Name for the merged group (e.g. "TopEAstore.com"):', customGroupBadge: "Custom group"
     }
   };
   function tr(key){ return T[lang][key] ?? key; }
@@ -636,6 +643,41 @@
     filters.magic = magicFilter.value; filters.comment = commentFilter.value; filters.symbol = symbolFilter.value;
   }
 
+  // ---------- Gruppi personalizzati: unione manuale di magic/commenti diversi sotto un nome scelto da te ----------
+  // Salvato solo nel browser, per conto — non tocca i dati su Firebase, completamente reversibile.
+  const CUSTOM_GROUPS_KEY = "eaDashboard_customGroups";
+  function getAllCustomGroups(){ try { return JSON.parse(localStorage.getItem(CUSTOM_GROUPS_KEY)) || {}; } catch(e){ return {}; } }
+  function setAllCustomGroups(all){ try { localStorage.setItem(CUSTOM_GROUPS_KEY, JSON.stringify(all)); } catch(e){} }
+  function getCustomGroups(){ const all = getAllCustomGroups(); return all[currentAccount] || { magics:{}, comments:{} }; }
+  function saveCustomGroups(cg){ const all = getAllCustomGroups(); all[currentAccount] = cg; setAllCustomGroups(all); }
+
+  function customLabelFor(t){
+    const cg = getCustomGroups();
+    const m = String(t.magic ?? 0);
+    if(cg.magics[m]) return cg.magics[m];
+    const c = (t.comment || "").trim();
+    if(c && cg.comments[c]) return cg.comments[c];
+    return null;
+  }
+
+  function mergeGroupsInto(groupsToMerge, label){
+    const cg = getCustomGroups();
+    groupsToMerge.forEach(g => {
+      g.magics.forEach(m => { cg.magics[m] = label; });
+      g.comments.forEach(c => { cg.comments[c] = label; });
+    });
+    saveCustomGroups(cg);
+  }
+
+  function removeCustomGroup(label){
+    const cg = getCustomGroups();
+    Object.keys(cg.magics).forEach(k => { if(cg.magics[k] === label) delete cg.magics[k]; });
+    Object.keys(cg.comments).forEach(k => { if(cg.comments[k] === label) delete cg.comments[k]; });
+    saveCustomGroups(cg);
+    renderEaSummary(allTrades);
+    renderTop5(allTrades);
+  }
+
   // ---------- Raggruppamento per EA: nome breve (default), commento intero, o magic number ----------
   let groupMode = "prefix"; // "prefix" | "comment" | "magic"
   const groupByPrefixBtn = document.getElementById("groupByPrefix");
@@ -658,11 +700,14 @@
   function groupByEa(trades){
     const groups = {};
     trades.forEach(t => {
+      const customLabel = customLabelFor(t);
       const magicKey = String(t.magic ?? 0);
       const commentKey = eaLabel(t);
       const prefixKey = eaShortName(t);
-      const key = groupMode === "magic" ? magicKey : groupMode === "comment" ? commentKey : prefixKey;
-      if(!groups[key]) groups[key] = { name: groupMode === "magic" ? `Magic ${magicKey}` : key, count:0, wins:0, netSum:0, lots:0, durSum:0, durCount:0, magics:new Set(), comments:new Set() };
+      const naturalKey = groupMode === "magic" ? magicKey : groupMode === "comment" ? commentKey : prefixKey;
+      const key = customLabel || naturalKey;
+      const name = customLabel || (groupMode === "magic" ? `Magic ${magicKey}` : naturalKey);
+      if(!groups[key]) groups[key] = { name, custom: !!customLabel, count:0, wins:0, netSum:0, lots:0, durSum:0, durCount:0, magics:new Set(), comments:new Set() };
       const g = groups[key];
       const net = t.net ?? t.profit ?? 0;
       g.count++;
@@ -675,7 +720,8 @@
     });
     return Object.values(groups).map(g => {
       let others;
-      if(groupMode === "magic") others = [...g.comments];
+      if(g.custom) others = [...g.magics].map(m => `Magic ${m}`).concat([...g.comments]).slice(0, 6);
+      else if(groupMode === "magic") others = [...g.comments];
       else if(groupMode === "prefix") others = [...g.magics].map(m => `Magic ${m}`);
       else others = [...g.magics].map(m => `Magic ${m}`);
       g.subtitle = others.length ? (others.length > 3 ? others.slice(0,3).join(", ") + ` +${others.length-3} ${tr("moreOthers")}` : others.join(", ")) : (groupMode === "magic" ? tr("noComment") : "");
@@ -704,6 +750,7 @@
     if(!groups.length){ wrap.innerHTML = `<div class="empty">${tr("noTradesClosed")}</div>`; return; }
 
     const cols = [
+      {key:"_sel", label:""},
       {key:"name", label:tr("colEa")},
       {key:"count", label:tr("colTrades"), num:true},
       {key:"winrate", label:tr("colWinRate"), num:true},
@@ -720,19 +767,22 @@
       return g[key];
     };
     const sorted = groups.slice().sort((a,b) => {
+      if(eaSortState.key === "_sel") return 0;
       let av = getVal(a, eaSortState.key), bv = getVal(b, eaSortState.key);
       if(typeof av === "string") return av.localeCompare(bv) * eaSortState.dir;
       return (av - bv) * eaSortState.dir;
     });
 
     const head = cols.map(c => {
+      if(c.key === "_sel") return `<th></th>`;
       const active = eaSortState.key === c.key;
       const arrow = active ? (eaSortState.dir === 1 ? " ▲" : " ▼") : "";
       return `<th class="${c.num?'num':''} sortable" data-key="${c.key}">${c.label}${arrow}</th>`;
     }).join("");
     const rows = sorted.map(g => `
       <tr class="clickable" data-name="${esc(g.name)}">
-        <td class="eaname">${esc(g.name)}${g.subtitle ? `<span class="sub">${esc(g.subtitle)}</span>` : ""}</td>
+        <td style="width:26px;" onclick="event.stopPropagation()"><input type="checkbox" class="eaSelectBox" data-name="${esc(g.name)}"></td>
+        <td class="eaname">${esc(g.name)}${g.custom ? ` <span class="custommark" title="${tr("customGroupBadge")}">★</span>` : ""}${g.subtitle ? `<span class="sub">${esc(g.subtitle)}</span>` : ""}</td>
         <td class="num">${g.count}</td>
         <td class="num">${((g.wins/g.count)*100).toFixed(0)}%</td>
         <td class="num">${g.lots.toFixed(2)}</td>
@@ -740,7 +790,19 @@
         <td class="num">${fmt(g.netSum/g.count)}</td>
         <td class="num">${g.durCount ? fmtDuration(g.durSum/g.durCount) : "—"}</td>
       </tr>`).join("");
-    wrap.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+
+    const customGroups = [...new Set(groups.filter(g => g.custom).map(g => g.name))];
+    const toolbar = `
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:10px; font-size:0.82rem; flex-wrap:wrap;">
+        <button class="iconbtn" id="mergeSelectedBtn" disabled>${tr("mergeSelected")}</button>
+        ${customGroups.length ? `<button class="linkbtn" id="manageGroupsBtn">${tr("manageGroups")} (${customGroups.length})</button>` : ""}
+      </div>
+      <div id="manageGroupsWrap" style="display:none; margin-bottom:14px; font-size:0.82rem;">
+        ${customGroups.map(name => `<span class="riskflag on" style="margin-right:6px;">${esc(name)} <a href="#" data-remove="${esc(name)}" style="color:var(--loss); margin-left:6px; text-decoration:none;">✕</a></span>`).join("")}
+      </div>`;
+
+    wrap.innerHTML = toolbar + `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+
     wrap.querySelectorAll("th.sortable").forEach(th => {
       th.addEventListener("click", () => {
         const key = th.dataset.key;
@@ -750,6 +812,36 @@
       });
     });
     wrap.querySelectorAll("tr.clickable").forEach(rowEl => rowEl.addEventListener("click", () => showEaDetail(rowEl.dataset.name)));
+
+    const mergeBtn = document.getElementById("mergeSelectedBtn");
+    const checkboxes = wrap.querySelectorAll(".eaSelectBox");
+    checkboxes.forEach(cb => cb.addEventListener("change", () => {
+      const checkedCount = wrap.querySelectorAll(".eaSelectBox:checked").length;
+      mergeBtn.disabled = checkedCount < 2;
+    }));
+    mergeBtn.addEventListener("click", () => {
+      const selectedNames = [...wrap.querySelectorAll(".eaSelectBox:checked")].map(cb => cb.dataset.name);
+      const selectedGroups = groups.filter(g => selectedNames.includes(g.name));
+      const label = window.prompt(tr("customGroupPrompt"), selectedNames[0]);
+      if(!label || !label.trim()) return;
+      mergeGroupsInto(selectedGroups, label.trim());
+      renderEaSummary(allTrades);
+      renderTop5(allTrades);
+    });
+
+    const manageBtn = document.getElementById("manageGroupsBtn");
+    if(manageBtn){
+      manageBtn.addEventListener("click", () => {
+        const el = document.getElementById("manageGroupsWrap");
+        el.style.display = el.style.display === "none" ? "block" : "none";
+      });
+      document.querySelectorAll("#manageGroupsWrap [data-remove]").forEach(a => {
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          removeCustomGroup(a.dataset.remove);
+        });
+      });
+    }
   }
 
   let sortState = { key: "closed_at", dir: -1 };
