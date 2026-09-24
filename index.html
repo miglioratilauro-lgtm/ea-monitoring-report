@@ -461,6 +461,16 @@
     return sep || c;
   };
 
+  // SICUREZZA: qualunque testo che arriva da Firebase (commenti, simboli, etichette conto, valuta...)
+  // è scritto da chi ha accesso in scrittura — non fidarsi mai, va sempre passato da qui prima di finire
+  // dentro un innerHTML, altrimenti un commento scritto ad arte potrebbe eseguire codice nel browser di
+  // chi guarda la dashboard (XSS). I numeri e le nostre stringhe fisse (tr(...)) non ne hanno bisogno,
+  // ma applicarlo anche a loro non fa danno.
+  function esc(str){
+    const s = (str === undefined || str === null) ? "" : String(str);
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+
   function periodStartTimestamp(key){
     if(key === "today"){
       const d = new Date(); d.setHours(0,0,0,0);
@@ -504,7 +514,7 @@
     const hidden = getHidden();
     const ids = showHiddenToo ? allAccountIds : allAccountIds.filter(id => !hidden.includes(id));
     accountSelect.innerHTML = ids.length
-      ? ids.map(id => `<option value="${id}">${id}${hidden.includes(id) ? tr("hiddenSuffix") : ""}</option>`).join("")
+      ? ids.map(id => `<option value="${esc(id)}">${esc(id)}${hidden.includes(id) ? tr("hiddenSuffix") : ""}</option>`).join("")
       : `<option>${tr("noVisibleAccounts")}</option>`;
     if(currentAccount && ids.includes(currentAccount)) accountSelect.value = currentAccount;
   }
@@ -617,7 +627,7 @@
     const comments = [...new Set(trades.map(eaLabel))].sort();
     const symbols = [...new Set(trades.map(t => t.symbol).filter(Boolean))].sort();
     const rebuild = (el, values, current, labelFn) => {
-      el.innerHTML = `<option value="">${tr("filterAll")}</option>` + values.map(v => `<option value="${v}">${labelFn ? labelFn(v) : v}</option>`).join("");
+      el.innerHTML = `<option value="">${tr("filterAll")}</option>` + values.map(v => `<option value="${esc(v)}">${esc(labelFn ? labelFn(v) : v)}</option>`).join("");
       el.value = values.includes(current) ? current : "";
     };
     rebuild(magicFilter, magics, filters.magic, v => `Magic ${v}`);
@@ -678,9 +688,9 @@
     const groups = groupByEa(trades).sort((a,b) => b.netSum - a.netSum).slice(0, 5);
     if(!groups.length){ wrap.innerHTML = `<div class="empty">${tr("noTradesClosed")}</div>`; return; }
     wrap.innerHTML = groups.map((g, i) => `
-      <div class="top5row" data-name="${g.name}">
+      <div class="top5row" data-name="${esc(g.name)}">
         <div class="top5rank">${i+1}</div>
-        <div class="top5name">${g.name}<span class="sub">${g.count} ${tr("trades")} · ${tr("winRate")} ${((g.wins/g.count)*100).toFixed(0)}% ${g.subtitle ? "· " + g.subtitle : ""}</span></div>
+        <div class="top5name">${esc(g.name)}<span class="sub">${g.count} ${tr("trades")} · ${tr("winRate")} ${((g.wins/g.count)*100).toFixed(0)}% ${g.subtitle ? "· " + esc(g.subtitle) : ""}</span></div>
         <div class="top5net num" style="color:${g.netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(g.netSum)}</div>
       </div>`).join("");
     wrap.querySelectorAll(".top5row").forEach(el => el.addEventListener("click", () => showEaDetail(el.dataset.name)));
@@ -721,8 +731,8 @@
       return `<th class="${c.num?'num':''} sortable" data-key="${c.key}">${c.label}${arrow}</th>`;
     }).join("");
     const rows = sorted.map(g => `
-      <tr class="clickable" data-name="${g.name}">
-        <td class="eaname">${g.name}${g.subtitle ? `<span class="sub">${g.subtitle}</span>` : ""}</td>
+      <tr class="clickable" data-name="${esc(g.name)}">
+        <td class="eaname">${esc(g.name)}${g.subtitle ? `<span class="sub">${esc(g.subtitle)}</span>` : ""}</td>
         <td class="num">${g.count}</td>
         <td class="num">${((g.wins/g.count)*100).toFixed(0)}%</td>
         <td class="num">${g.lots.toFixed(2)}</td>
@@ -964,7 +974,7 @@
     currentChartTrades = trades;
     currentChartName = name;
     document.getElementById("chartTitle").innerHTML =
-      `📊 ${tr("trendTitle")} — ${name} ` +
+      `📊 ${tr("trendTitle")} — ${esc(name)} ` +
       `<button class="linkbtn" id="expandChartBtn" style="float:right; margin-left:14px;">${tr("expand")}</button>` +
       `<button class="linkbtn" id="closeChartBtn2" style="float:right;">${tr("close")}</button>`;
     document.getElementById("chartWrap").innerHTML = drawEquitySvg(trades, accountCurrency, 260);
@@ -1076,7 +1086,7 @@
     const xLabelEnd = new Date(points[points.length-1].closed_at*1000).toLocaleDateString(locale());
 
     return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;">
-      <text x="${padL}" y="16" font-size="11" fill="#8b94a1">${tr("cumulativeProfit")} (${currency || ''}) — ${tr("bySequence")}</text>
+      <text x="${padL}" y="16" font-size="11" fill="#8b94a1">${tr("cumulativeProfit")} (${esc(currency) || ''}) — ${tr("bySequence")}</text>
       ${gridLines}
       ${gridLabels}
       <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="#5b8def" stroke-width="1" stroke-dasharray="3,3"/>
@@ -1129,11 +1139,11 @@
     const rows = sorted.slice(0, 150).map(t => `
       <tr>
         <td>${fmtDate(t.closed_at)}</td>
-        <td>${t.symbol || ""}</td>
+        <td>${esc(t.symbol) || ""}</td>
         <td>${t.type === "buy_close" ? tr("buyLbl") : tr("sellLbl")}</td>
         <td class="num">${(t.volume ?? 0).toFixed(2)}</td>
-        <td>${t.comment || ""}</td>
-        <td class="num">${t.magic ?? 0}</td>
+        <td>${esc(t.comment) || ""}</td>
+        <td class="num">${esc(t.magic ?? 0)}</td>
         <td class="num">${fmtDuration(t.duration_sec)}</td>
         <td class="num" style="color:${(t.net ?? t.profit) >= 0 ? 'var(--gain)' : 'var(--loss)'}">${fmt(t.net ?? t.profit)}</td>
       </tr>`).join("");
