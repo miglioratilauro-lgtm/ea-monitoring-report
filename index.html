@@ -309,7 +309,7 @@
       trades: "operazioni", winRate: "win rate",
       colEa: "EA", colTrades: "Operazioni", colWinRate: "Win rate", colLots: "Lotti tot.", colNet: "Netto",
       colAvgTrade: "Media/trade", colAvgDuration: "Durata media",
-      colClosedOn: "Chiusa il", colSymbol: "Simbolo", colSide: "Verso", colLotsShort: "Lotti", colComment: "Commento",
+      colClosedOn: "Chiusa il", colOpenedOn: "Aperta il", colSymbol: "Simbolo", colSide: "Verso", colLotsShort: "Lotti", colComment: "Commento",
       colMagic: "Magic", colDuration: "Durata",
       expand: "espandi", close: "chiudi",
       period: "Periodo", tradesCount: "Operazioni", net: "Netto",
@@ -366,7 +366,7 @@
       trades: "trades", winRate: "win rate",
       colEa: "EA", colTrades: "Trades", colWinRate: "Win rate", colLots: "Total lots", colNet: "Net",
       colAvgTrade: "Avg/trade", colAvgDuration: "Avg duration",
-      colClosedOn: "Closed on", colSymbol: "Symbol", colSide: "Side", colLotsShort: "Lots", colComment: "Comment",
+      colClosedOn: "Closed on", colOpenedOn: "Opened on", colSymbol: "Symbol", colSide: "Side", colLotsShort: "Lots", colComment: "Comment",
       colMagic: "Magic", colDuration: "Duration",
       expand: "expand", close: "close",
       period: "Period", tradesCount: "Trades", net: "Net",
@@ -1230,6 +1230,7 @@
     if(!trades.length){ wrap.innerHTML = `<div class="empty">${tr("noTradesFound")}</div>`; return; }
 
     const cols = [
+      {key:"opened_at", label:tr("colOpenedOn")},
       {key:"closed_at", label:tr("colClosedOn")},
       {key:"symbol", label:tr("colSymbol")},
       {key:"type", label:tr("colSide")},
@@ -1242,6 +1243,7 @@
     const sorted = sortTrades(trades);
     const rows = sorted.slice(0, 150).map(t => `
       <tr>
+        <td>${t.opened_at ? fmtDate(t.opened_at) : "—"}</td>
         <td>${fmtDate(t.closed_at)}</td>
         <td>${esc(t.symbol) || ""}</td>
         <td>${t.type === "buy_close" ? tr("buyLbl") : tr("sellLbl")}</td>
