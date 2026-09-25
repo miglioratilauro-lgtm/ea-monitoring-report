@@ -547,7 +547,7 @@
 
   // ---------- Dati del conto selezionato ----------
   let allTrades = [];
-  let filters = { magic: "", comment: "", symbol: "", prefix: "" };
+  let filters = { magic: "", comment: "", symbol: "", prefix: "", custom: "" };
 
   let statusRef = null, tradesRef = null, ddMonitorRef = null;
   let ddMonitorData = {};
@@ -614,6 +614,7 @@
       (filters.magic === "" || String(t.magic ?? 0) === filters.magic) &&
       (filters.comment === "" || eaLabel(t) === filters.comment) &&
       (filters.prefix === "" || eaShortName(t) === filters.prefix) &&
+      (filters.custom === "" || customLabelFor(t) === filters.custom) &&
       (filters.symbol === "" || t.symbol === filters.symbol)
     );
   }
@@ -625,6 +626,7 @@
     el.addEventListener("change", (e) => {
       filters[key] = e.target.value;
       filters.prefix = "";
+      filters.custom = "";
       renderTrades(applyFilters(allTrades));
     });
   });
@@ -869,7 +871,17 @@
     filters.magic = "";
     filters.comment = "";
     filters.prefix = "";
-    if(groupMode === "magic" && name.startsWith("Magic ")){
+    filters.custom = "";
+
+    // se il nome corrisponde a un gruppo personalizzato (creato unendo righe), filtra per quello:
+    // il vecchio filtro per magic/commento/prefisso non basterebbe, dato che un gruppo personalizzato
+    // può includere più magic e più commenti diversi tutti insieme.
+    const groups = groupByEa(allTrades);
+    const matchedGroup = groups.find(g => g.name === name);
+
+    if(matchedGroup && matchedGroup.custom){
+      filters.custom = name;
+    } else if(groupMode === "magic" && name.startsWith("Magic ")){
       const magicVal = name.substring(6);
       filters.magic = [...magicFilter.options].some(o => o.value === magicVal) ? magicVal : "";
     } else if(groupMode === "comment"){
