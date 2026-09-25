@@ -190,6 +190,19 @@
   .riskflags{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
   .riskflag{ font-size:0.74rem; padding:3px 10px; border-radius:6px; border:1px solid var(--border); color:var(--muted); }
   .riskflag.on{ border-color:var(--gold); color:var(--gold); }
+
+  .hourbar-wrap{ display:flex; align-items:flex-end; gap:2px; height:60px; margin:10px 0 6px; }
+  .hourbar{ flex:1; background:var(--border); border-radius:2px 2px 0 0; position:relative; min-height:2px; }
+  .hourbar.best{ box-shadow:0 0 0 1px var(--gain); }
+  .hourbar.worst{ box-shadow:0 0 0 1px var(--loss); }
+  .hourlabels{ display:flex; gap:2px; font-size:0.6rem; color:var(--muted); }
+  .hourlabels span{ flex:1; text-align:center; }
+
+  .monthgrid{ width:100%; border-collapse:collapse; font-size:0.82rem; }
+  .monthgrid td, .monthgrid th{ padding:7px 6px; text-align:center; border:1px solid var(--border); }
+  .monthgrid th{ color:var(--muted); font-weight:500; font-size:0.72rem; }
+  .monthgrid td.yearlbl{ text-align:left; color:var(--muted); font-weight:600; }
+  .monthgrid td.empty{ color:var(--muted); opacity:0.4; }
 </style>
 </head>
 <body>
@@ -255,6 +268,8 @@
     <div id="drawdownWrap" style="margin-top:6px;"></div>
     <div id="realDdWrap"></div>
     <div class="chartsummary" id="chartSummary"></div>
+    <div id="hourlyWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
+    <div id="monthlyWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
   </div>
 
   <div class="panel">
@@ -343,7 +358,10 @@
       noWeaknesses: "Nessuna criticità rilevante rilevata",
       buyLbl: "Buy", sellLbl: "Sell", durD: "g",
       mergeSelected: "Unisci righe selezionate in un gruppo", manageGroups: "gestisci gruppi personalizzati",
-      customGroupPrompt: 'Nome del gruppo unificato (es. "TopEAstore.com"):', customGroupBadge: "Gruppo personalizzato"
+      customGroupPrompt: 'Nome del gruppo unificato (es. "TopEAstore.com"):', customGroupBadge: "Gruppo personalizzato",
+      hourlyTitle: "Fasce orarie", hourlyBest: "Migliore", hourlyWorst: "Peggiore", hourlyLocalTime: "orario del tuo browser",
+      monthlyTitle: "Profitti mensili", monthlyYear: "Anno", monthlyNoData: "—",
+      pauseLabel: "pausa"
     },
     en: {
       connecting: "connecting…", loadingAccounts: "Loading accounts…",
@@ -400,7 +418,10 @@
       noWeaknesses: "No significant weakness detected",
       buyLbl: "Buy", sellLbl: "Sell", durD: "d",
       mergeSelected: "Merge selected rows into a group", manageGroups: "manage custom groups",
-      customGroupPrompt: 'Name for the merged group (e.g. "TopEAstore.com"):', customGroupBadge: "Custom group"
+      customGroupPrompt: 'Name for the merged group (e.g. "TopEAstore.com"):', customGroupBadge: "Custom group",
+      hourlyTitle: "Hourly performance", hourlyBest: "Best", hourlyWorst: "Worst", hourlyLocalTime: "your browser's local time",
+      monthlyTitle: "Monthly profit", monthlyYear: "Year", monthlyNoData: "—",
+      pauseLabel: "pause"
     }
   };
   function tr(key){ return T[lang][key] ?? key; }
@@ -517,11 +538,17 @@
     }
   });
 
+  function maskAccountId(id){
+    const digitsOnly = /^\d+$/.test(id);
+    if(digitsOnly && id.length > 4) return "••••" + id.slice(-4);
+    return id; // le etichette scelte da te (non numeriche) restano leggibili
+  }
+
   function renderAccountSelect(){
     const hidden = getHidden();
     const ids = showHiddenToo ? allAccountIds : allAccountIds.filter(id => !hidden.includes(id));
     accountSelect.innerHTML = ids.length
-      ? ids.map(id => `<option value="${esc(id)}">${esc(id)}${hidden.includes(id) ? tr("hiddenSuffix") : ""}</option>`).join("")
+      ? ids.map(id => `<option value="${esc(id)}">${esc(maskAccountId(id))}${hidden.includes(id) ? tr("hiddenSuffix") : ""}</option>`).join("")
       : `<option>${tr("noVisibleAccounts")}</option>`;
     if(currentAccount && ids.includes(currentAccount)) accountSelect.value = currentAccount;
   }
@@ -1073,6 +1100,76 @@
       </div>`;
   }
 
+  // ---------- Fasce orarie: quali ore del giorno performano meglio/peggio (ora locale del tuo browser) ----------
+  function renderHourlyBlock(trades){
+    if(!trades.length) return "";
+    const hours = Array.from({length:24}, () => ({sum:0, count:0}));
+    trades.forEach(t => {
+      const h = new Date(t.closed_at * 1000).getHours();
+      hours[h].sum += (t.net ?? t.profit ?? 0);
+      hours[h].count++;
+    });
+    const active = hours.map((h,i) => ({...h, hour:i})).filter(h => h.count > 0);
+    if(!active.length) return "";
+    const best = active.reduce((a,b) => b.sum > a.sum ? b : a);
+    const worst = active.reduce((a,b) => b.sum < a.sum ? b : a);
+    const maxAbs = Math.max(...hours.map(h => Math.abs(h.sum)), 0.0001);
+
+    const bars = hours.map((h,i) => {
+      const heightPct = h.count ? Math.max(6, (Math.abs(h.sum)/maxAbs)*100) : 2;
+      const color = h.sum >= 0 ? "var(--gain)" : "var(--loss)";
+      const cls = (i===best.hour && best.sum>0) ? "best" : (i===worst.hour && worst.sum<0) ? "worst" : "";
+      const title = h.count ? `${i}:00 — ${fmt(h.sum, accountCurrency)} (${h.count})` : `${i}:00 — ${tr("monthlyNoData")}`;
+      return `<div class="hourbar ${cls}" style="height:${heightPct}%; background:${h.count?color:'var(--border)'}" title="${esc(title)}"></div>`;
+    }).join("");
+    const labels = hours.map((h,i) => i % 3 === 0 ? `<span>${i}</span>` : `<span></span>`).join("");
+
+    return `
+      <div style="font-size:0.78rem; color:var(--muted); margin-bottom:2px;">🕐 ${tr("hourlyTitle")} <span style="font-size:0.72rem;">(${tr("hourlyLocalTime")})</span></div>
+      <div class="hourbar-wrap">${bars}</div>
+      <div class="hourlabels">${labels}</div>
+      <div style="display:flex; gap:24px; font-size:0.82rem; margin-top:8px;">
+        <span>${tr("hourlyBest")}: <b style="color:var(--gain)">${best.hour}:00</b> (${fmt(best.sum, accountCurrency)})</span>
+        <span>${tr("hourlyWorst")}: <b style="color:var(--loss)">${worst.hour}:00</b> (${fmt(worst.sum, accountCurrency)})</span>
+      </div>`;
+  }
+
+  // ---------- Griglia profitti mensili ----------
+  function renderMonthlyGrid(trades, currency){
+    if(!trades.length) return "";
+    const months = {}; // "YYYY-M" -> sum
+    trades.forEach(t => {
+      const d = new Date(t.closed_at * 1000);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      months[key] = (months[key] || 0) + (t.net ?? t.profit ?? 0);
+    });
+    const years = [...new Set(Object.keys(months).map(k => Number(k.split("-")[0])))].sort();
+    const monthNamesIt = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
+    const monthNamesEn = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const monthNames = lang === "it" ? monthNamesIt : monthNamesEn;
+    const maxAbs = Math.max(...Object.values(months).map(v => Math.abs(v)), 0.0001);
+
+    const head = `<tr><th>${tr("monthlyYear")}</th>${monthNames.map(m=>`<th>${m}</th>`).join("")}</tr>`;
+    const rows = years.map(y => {
+      let yearTotal = 0;
+      const cells = Array.from({length:12}, (_,m) => {
+        const key = `${y}-${m}`;
+        if(!(key in months)) { yearTotal += 0; return `<td class="empty">${tr("monthlyNoData")}</td>`; }
+        const v = months[key];
+        yearTotal += v;
+        const intensity = Math.min(1, Math.abs(v)/maxAbs) * 0.35 + 0.05;
+        const bg = v >= 0 ? `rgba(61,220,132,${intensity})` : `rgba(255,92,92,${intensity})`;
+        const color = v >= 0 ? "var(--gain)" : "var(--loss)";
+        return `<td style="background:${bg}; color:${color}; font-weight:600;">${v>=0?'+':''}${fmt(v, currency)}</td>`;
+      }).join("");
+      return `<tr><td class="yearlbl">${y}</td>${cells}</tr>`;
+    }).join("");
+
+    return `
+      <div style="font-size:0.78rem; color:var(--muted); margin-bottom:8px;">📅 ${tr("monthlyTitle")}</div>
+      <div style="overflow-x:auto;"><table class="monthgrid">${head}${rows}</table></div>`;
+  }
+
   function renderChartPanel(name, trades){
     const panel = document.getElementById("chartPanel");
     currentChartTrades = trades;
@@ -1085,6 +1182,8 @@
     document.getElementById("drawdownWrap").innerHTML = drawDrawdownSvg(trades, accountCurrency, 90);
     document.getElementById("realDdWrap").innerHTML = renderRealDdBlock(trades);
     document.getElementById("scoreWrap").innerHTML = renderScoreBlock(trades);
+    document.getElementById("hourlyWrap").innerHTML = renderHourlyBlock(trades);
+    document.getElementById("monthlyWrap").innerHTML = renderMonthlyGrid(trades, accountCurrency);
     document.getElementById("closeChartBtn2").addEventListener("click", hideChartPanel);
     document.getElementById("expandChartBtn").addEventListener("click", () => openChartModal());
 
@@ -1186,6 +1285,21 @@
               `<title>${new Date(p.closed_at*1000).toLocaleString(locale())} · ${tr("trade")} ${p.net>=0?'+':''}${fmt(p.net, currency)} · ${tr("cumulative")} ${fmt(p.y, currency)}</title></circle>`;
     });
 
+    // Bande "pausa": vuoti reali di più giorni senza operazioni (weekend normali esclusi, servono almeno 3 giorni pieni)
+    let pauseBands = "";
+    const PAUSE_THRESHOLD_SEC = 3 * 86400;
+    for(let idx = 1; idx < points.length; idx++){
+      const gap = points[idx].closed_at - points[idx-1].closed_at;
+      if(gap >= PAUSE_THRESHOLD_SEC){
+        const x1 = scaleX(points[idx-1].i), x2 = scaleX(points[idx].i);
+        const days = Math.round(gap / 86400);
+        const midX = (x1 + x2) / 2;
+        pauseBands += `<rect x="${x1.toFixed(1)}" y="${padT}" width="${Math.max(1,(x2-x1)).toFixed(1)}" height="${plotH}" fill="#5b8def" opacity="0.08"/>`;
+        pauseBands += `<line x1="${midX.toFixed(1)}" y1="${padT}" x2="${midX.toFixed(1)}" y2="${padT+plotH}" stroke="#5b8def" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
+        pauseBands += `<text x="${midX.toFixed(1)}" y="${padT+14}" text-anchor="middle" font-size="9" fill="#5b8def" transform="rotate(-90 ${midX.toFixed(1)} ${padT+14})">${tr("pauseLabel")} ${days}g</text>`;
+      }
+    }
+
     const xLabelStart = new Date(points[0].closed_at*1000).toLocaleDateString(locale());
     const xLabelEnd = new Date(points[points.length-1].closed_at*1000).toLocaleDateString(locale());
 
@@ -1193,6 +1307,7 @@
       <text x="${padL}" y="16" font-size="11" fill="#8b94a1">${tr("cumulativeProfit")} (${esc(currency) || ''}) — ${tr("bySequence")}</text>
       ${gridLines}
       ${gridLabels}
+      ${pauseBands}
       <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="#5b8def" stroke-width="1" stroke-dasharray="3,3"/>
       <path d="${areaPath}" fill="${color}" opacity="0.10" stroke="none"/>
       <path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>
