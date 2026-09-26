@@ -652,9 +652,16 @@
   [["magic", magicFilter], ["comment", commentFilter], ["symbol", symbolFilter]].forEach(([key, el]) => {
     el.addEventListener("change", (e) => {
       filters[key] = e.target.value;
-      filters.prefix = "";
-      filters.custom = "";
-      renderTrades(applyFilters(allTrades));
+      if(key !== "symbol"){
+        // scegliere esplicitamente EA/commento sostituisce la selezione da gruppo — il simbolo invece si combina, non sostituisce
+        filters.prefix = "";
+        filters.custom = "";
+      }
+      const filtered = applyFilters(allTrades);
+      renderTrades(filtered);
+      if(currentChartTrades.length && document.getElementById("chartPanel").style.display !== "none"){
+        renderChartPanel(currentChartName, filtered);
+      }
     });
   });
 
