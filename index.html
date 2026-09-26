@@ -1341,7 +1341,16 @@
 
   function renderTrades(trades){
     const wrap = document.getElementById("tradesWrap");
-    document.getElementById("tradesSubtitle").textContent = `— ${trades.length} ${tr("trades")}`;
+    const subtitleEl = document.getElementById("tradesSubtitle");
+    if(trades.length){
+      const netSum = trades.reduce((s,t) => s + (t.net ?? t.profit ?? 0), 0);
+      const totalLots = trades.reduce((s,t) => s + (t.volume ?? 0), 0);
+      const durVals = trades.filter(t => t.duration_sec);
+      const avgDur = durVals.length ? durVals.reduce((s,t) => s + t.duration_sec, 0) / durVals.length : 0;
+      subtitleEl.innerHTML = `— ${trades.length} ${tr("trades")} · ${tr("colNet")}: <b style="color:${netSum>=0?'var(--gain)':'var(--loss)'}">${fmt(netSum, accountCurrency)}</b> · ${tr("colLots")}: <b>${totalLots.toFixed(2)}</b> · ${tr("colAvgDuration")}: <b>${avgDur ? fmtDuration(avgDur) : "—"}</b>`;
+    } else {
+      subtitleEl.textContent = `— 0 ${tr("trades")}`;
+    }
     if(!trades.length){ wrap.innerHTML = `<div class="empty">${tr("noTradesFound")}</div>`; return; }
 
     const cols = [
