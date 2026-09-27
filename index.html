@@ -1569,7 +1569,7 @@
     const sessionBoxes = b.sessions.map(s => `
       <div class="sessionbox">
         <div class="sname">${s.key}</div>
-        <div class="sval" style="color:${s.sum>=0?'var(--gain)':'var(--loss)'}">${s.sum>=0?'+':''}${s.sum.toFixed(0)}</div>
+        <div class="sval" style="color:${s.sum>=0?'var(--gain)':'var(--loss)'}">${s.sum>=0?'+':''}${fmt(s.sum, currency)}</div>
         <div class="shours">${String(s.from).padStart(2,'0')}-${String(s.to).padStart(2,'0')} · ${s.count}</div>
         <div class="minibar-row">${s.hourBars.map(v => `<div class="minibar" style="height:${Math.max(15,(Math.abs(v)/maxAbsHourly)*100)}%; background:${v>=0?'var(--gain)':v<0?'var(--loss)':'var(--border)'}"></div>`).join("")}</div>
       </div>`).join("");
@@ -1580,10 +1580,10 @@
       <div class="behcard loss">
         <h5>${tr("critSession")}</h5>
         <div class="behsub">${tr("critSessionSub")}</div>
-        <div class="behbig" style="color:var(--loss)">${String(worstFrom).padStart(2,'0')}:00 ${tr("periodTo")} ${String(worstTo).padStart(2,'0')}:00 &nbsp; ${worstW.sum.toFixed(0)} ${esc(currency)}</div>
+        <div class="behbig" style="color:var(--loss)">${String(worstFrom).padStart(2,'0')}:00 ${tr("periodTo")} ${String(worstTo).padStart(2,'0')}:00 &nbsp; ${fmt(worstW.sum, currency)}</div>
         <div class="behsub">${tr("costliestWindow")} ${total} ${tr("trades")}</div>
         <div class="sessionrow">${sessionBoxes}</div>
-        <div style="font-size:0.8rem;">${tr("bestSession")}: <b style="color:var(--gain)">${b.bestSession.key} · +${b.bestSession.sum.toFixed(0)} ${esc(currency)}</b></div>
+        <div style="font-size:0.8rem;">${tr("bestSession")}: <b style="color:var(--gain)">${b.bestSession.key} · +${fmt(b.bestSession.sum, currency)}</b></div>
       </div>`;
 
     // --- Card 2: long vs short ---
