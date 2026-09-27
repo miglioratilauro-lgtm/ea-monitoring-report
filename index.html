@@ -214,6 +214,45 @@
   .statrow .lbl .infoicon{ display:inline-block; width:14px; height:14px; border-radius:50%; background:var(--border); color:var(--muted); font-size:0.65rem; text-align:center; line-height:14px; margin-left:4px; }
   .statrow .val{ font-family:ui-monospace,monospace; font-weight:600; }
   .collapsebtn{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.9rem; padding:0 6px 0 0; }
+
+  .behaviourgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:8px; }
+  @media (max-width:900px){ .behaviourgrid{ grid-template-columns:1fr; } }
+  .behcard{ background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:16px; position:relative; overflow:hidden; }
+  .behcard::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; }
+  .behcard.loss::before{ background:var(--loss); }
+  .behcard.gain::before{ background:var(--gain); }
+  .behcard.brand::before{ background:var(--brand); }
+  .behcard h5{ margin:4px 0 2px; font-size:0.95rem; }
+  .behcard .behsub{ font-size:0.72rem; color:var(--muted); margin-bottom:10px; }
+  .behbig{ font-size:1.5rem; font-weight:700; font-family:ui-monospace,monospace; }
+
+  .sessionrow{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0; }
+  .sessionbox{ background:var(--panel); border-radius:8px; padding:8px; text-align:center; }
+  .sessionbox .sname{ font-size:0.68rem; color:var(--muted); letter-spacing:0.05em; }
+  .sessionbox .sval{ font-size:1.05rem; font-weight:700; font-family:ui-monospace,monospace; margin:2px 0; }
+  .sessionbox .shours{ font-size:0.65rem; color:var(--muted); }
+  .minibar-row{ display:flex; gap:1px; height:16px; margin-top:4px; align-items:flex-end; }
+  .minibar{ flex:1; background:var(--border); border-radius:1px; min-height:2px; }
+
+  .donut{ width:120px; height:120px; border-radius:50%; position:relative; margin:0 auto; }
+  .donut-hole{ position:absolute; inset:14px; background:var(--bg); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .donut-num{ font-size:1.4rem; font-weight:700; font-family:ui-monospace,monospace; }
+  .donut-lbl{ font-size:0.62rem; color:var(--muted); }
+
+  .barlbl-row{ display:flex; align-items:center; gap:8px; font-size:0.82rem; margin:6px 0; }
+  .barlbl-row .barname{ width:42px; flex-shrink:0; }
+  .barlbl-row .bartrack{ flex:1; height:8px; background:var(--panel); border-radius:4px; overflow:hidden; }
+  .barlbl-row .bartrack > div{ height:100%; }
+  .barlbl-row .barval{ width:58px; text-align:right; font-family:ui-monospace,monospace; flex-shrink:0; }
+
+  .holdrow{ margin:12px 0; }
+  .holdrow .holdtop{ display:flex; justify-content:space-between; font-size:0.88rem; font-weight:600; }
+  .holdrow .holdmeta{ font-size:0.7rem; color:var(--muted); margin:1px 0 5px; }
+  .holdrow .bartrack{ height:6px; background:var(--panel); border-radius:3px; overflow:hidden; }
+  .holdrow .bartrack > div{ height:100%; }
+
+  .powerhourbar{ display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--bg); border-top:1px solid var(--border); font-size:0.82rem; color:var(--muted); }
+  .powerhourbar .phbadge{ background:rgba(224,184,74,0.15); color:var(--gold); font-size:0.68rem; font-weight:700; padding:3px 8px; border-radius:5px; letter-spacing:0.04em; flex-shrink:0; }
 </style>
 </head>
 <body>
@@ -282,6 +321,7 @@
     <div id="hourlyWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
     <div id="monthlyWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
     <div id="tradeStatsWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
+    <div id="behaviourWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
   </div>
 
   <div class="panel">
@@ -373,7 +413,7 @@
       buyLbl: "Buy", sellLbl: "Sell", durD: "g",
       mergeSelected: "Unisci righe selezionate in un gruppo", manageGroups: "gestisci gruppi personalizzati",
       customGroupPrompt: 'Nome del gruppo unificato (es. "TopEAstore.com"):', customGroupBadge: "Gruppo personalizzato",
-      hourlyTitle: "Fasce orarie", hourlyBest: "Migliore", hourlyWorst: "Peggiore", hourlyLocalTime: "orario del tuo browser",
+      hourlyTitle: "Fasce orarie", hourlyBest: "Migliore", hourlyWorst: "Peggiore", hourlyLocalTime: "orario del server/broker",
       monthlyTitle: "Profitti mensili", monthlyYear: "Anno", monthlyNoData: "—",
       pauseLabel: "pausa",
       searchEaPlaceholder: "Cerca EA...", noEaSearchResults: "Nessun EA corrisponde alla ricerca",
@@ -392,7 +432,22 @@
       tipZScore: "Misura se le serie di vincite/perdite consecutive sono casuali o no. Vicino a 0 = casuale; molto negativo = perdite che tendono a raggrupparsi più del normale.",
       tipSQN: "Indice di qualità del sistema (Van Tharp): combina numero di operazioni e costanza dei risultati.",
       tipSkew: "Se i risultati tendono più verso perdite piccole e frequenti con rare vincite grandi (positivo), o il contrario (negativo).",
-      tipStagnation: "Il periodo più lungo senza un nuovo massimo di equity — quanto è durata la fase più lunga 'sott'acqua'."
+      tipStagnation: "Il periodo più lungo senza un nuovo massimo di equity — quanto è durata la fase più lunga 'sott'acqua'.",
+      behaviourTitle: "COMPORTAMENTO", behaviourSub: "Sessione critica · Long/Short · Durata posizione",
+      critSession: "Sessione critica", critSessionSub: "Perdita per ora · orario server",
+      costliestWindow: "Finestra più costosa di", bestSession: "Sessione migliore",
+      longVsShort: "Long contro short", result: "RISULTATO", hitRate: "TASSO DI SUCCESSO",
+      long: "Long", short: "Short",
+      bothEarn: "Entrambe le direzioni sono in utile. Long contribuisce", ofProfit: "% del profitto.",
+      onlyLongProfit: "Solo le operazioni Long sono in utile netto.", onlyShortProfit: "Solo le operazioni Short sono in utile netto.",
+      bothNegative: "Entrambe le direzioni sono in perdita netta nel periodo.",
+      holdingTime: "Durata posizione", holdingSub: "Da dove viene il risultato",
+      sameDay: "stesso giorno", perTrade: "per operazione",
+      resultByHolding: "RISULTATO PER DURATA", intraday: "Intraday", overnight: "Overnight", weekendGap: "Weekend gap",
+      profitWithinDay: "Il profitto viene fatto entro la giornata.", ofTrades: "% delle operazioni",
+      powerHour: "POWER HOUR", noFavHour: "Nessuna ora preferita: la finestra di 2 ore più forte porta solo il",
+      ofNetProfit: "% del profitto netto, ne servirebbe il 20%. I profitti sono distribuiti nella giornata.",
+      bestHour2: "Ora migliore:", contributing: "contribuisce il", ofNet: "% del profitto netto.",
     },
     en: {
       connecting: "connecting…", loadingAccounts: "Loading accounts…",
@@ -450,7 +505,7 @@
       buyLbl: "Buy", sellLbl: "Sell", durD: "d",
       mergeSelected: "Merge selected rows into a group", manageGroups: "manage custom groups",
       customGroupPrompt: 'Name for the merged group (e.g. "TopEAstore.com"):', customGroupBadge: "Custom group",
-      hourlyTitle: "Hourly performance", hourlyBest: "Best", hourlyWorst: "Worst", hourlyLocalTime: "your browser's local time",
+      hourlyTitle: "Hourly performance", hourlyBest: "Best", hourlyWorst: "Worst", hourlyLocalTime: "broker/server time",
       monthlyTitle: "Monthly profit", monthlyYear: "Year", monthlyNoData: "—",
       pauseLabel: "pause",
       searchEaPlaceholder: "Search EA...", noEaSearchResults: "No EA matches your search",
@@ -469,7 +524,22 @@
       tipZScore: "Measures whether streaks of consecutive wins/losses are random or not. Near 0 = random; strongly negative = losses tend to cluster more than normal.",
       tipSQN: "System Quality Number (Van Tharp): combines trade count and consistency of results.",
       tipSkew: "Whether results tend toward frequent small losses with rare large wins (positive), or the opposite (negative).",
-      tipStagnation: "The longest stretch without a new equity high — how long the longest 'underwater' phase lasted."
+      tipStagnation: "The longest stretch without a new equity high — how long the longest 'underwater' phase lasted.",
+      behaviourTitle: "BEHAVIOUR", behaviourSub: "Critical session · Long versus short · Holding time",
+      critSession: "Critical session", critSessionSub: "Loss by hour · server time",
+      costliestWindow: "Costliest window of", bestSession: "Best session",
+      longVsShort: "Long versus short", result: "RESULT", hitRate: "HIT RATE",
+      long: "Long", short: "Short",
+      bothEarn: "Both directions earn. Long contributes", ofProfit: "% of the profit.",
+      onlyLongProfit: "Only long trades are net profitable.", onlyShortProfit: "Only short trades are net profitable.",
+      bothNegative: "Both directions are net negative for this period.",
+      holdingTime: "Holding time", holdingSub: "Where the result comes from",
+      sameDay: "same day", perTrade: "per trade",
+      resultByHolding: "RESULT BY HOLDING TIME", intraday: "Intraday", overnight: "Overnight", weekendGap: "Weekend gap",
+      profitWithinDay: "The profit is made within the day.", ofTrades: "% of trades",
+      powerHour: "POWER HOUR", noFavHour: "No favourite hour: the strongest 2-hour window carries only",
+      ofNetProfit: "% of net profit, 20% would be needed. The profits are spread across the day.",
+      bestHour2: "Best hour:", contributing: "contributes", ofNet: "% of net profit.",
     }
   };
   function tr(key){ return T[lang][key] ?? key; }
@@ -526,7 +596,7 @@
 
   const fmt = (n, c) => (n === undefined || n === null) ? "—" :
     new Intl.NumberFormat(locale(), {style: c ? "currency" : "decimal", currency: c || undefined, maximumFractionDigits: 2}).format(n);
-  const fmtDate = (unixSec) => new Date(unixSec * 1000).toLocaleString(locale());
+  const fmtDate = (unixSec) => new Date(unixSec * 1000).toLocaleString(locale(), { timeZone: "UTC" });
   const fmtDuration = (sec) => {
     if(!sec || sec <= 0) return "—";
     sec = Math.round(sec);
@@ -699,7 +769,7 @@
 
   function renderPeriodLabel(trades){
     const el = document.getElementById("periodRangeLabel");
-    const fmtD = ts => new Date(ts * 1000).toLocaleDateString(locale());
+    const fmtD = ts => new Date(ts * 1000).toLocaleDateString(locale(), { timeZone: "UTC" });
     const now = Math.floor(Date.now() / 1000);
     let startTs = periodStartTimestamp(currentPeriod);
     if(currentPeriod === "all"){
@@ -1207,7 +1277,7 @@
     if(!trades.length) return "";
     const hours = Array.from({length:24}, () => ({sum:0, count:0}));
     trades.forEach(t => {
-      const h = new Date(t.closed_at * 1000).getHours();
+      const h = new Date(t.closed_at * 1000).getUTCHours();
       hours[h].sum += (t.net ?? t.profit ?? 0);
       hours[h].count++;
     });
@@ -1242,7 +1312,7 @@
     const months = {}; // "YYYY-M" -> sum
     trades.forEach(t => {
       const d = new Date(t.closed_at * 1000);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const key = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
       months[key] = (months[key] || 0) + (t.net ?? t.profit ?? 0);
     });
     const years = [...new Set(Object.keys(months).map(k => Number(k.split("-")[0])))].sort();
@@ -1410,6 +1480,201 @@
     });
   }
 
+  // ---------- Comportamento: sessione critica, long/short, durata posizione (orario server) ----------
+  let behaviourCollapsed = false;
+
+  function categorizeHolding(openedAt, closedAt){
+    if(!openedAt) return null;
+    const openDay = Math.floor(openedAt / 86400);
+    const closeDay = Math.floor(closedAt / 86400);
+    if(openDay === closeDay) return "intraday";
+    for(let d = openDay; d <= closeDay; d++){
+      const dow = new Date(d * 86400 * 1000).getUTCDay();
+      if(dow === 0 || dow === 6) return "weekend";
+    }
+    return "overnight";
+  }
+
+  function computeBehaviour(trades){
+    const nets = trades.map(t => t.net ?? t.profit ?? 0);
+
+    // --- Sessione critica: perdita per finestre di 2 ore (server time) ---
+    const windows = Array.from({length:12}, () => ({sum:0, count:0})); // 12 finestre da 2h
+    trades.forEach(t => {
+      const h = new Date(t.closed_at * 1000).getUTCHours();
+      const w = Math.floor(h / 2);
+      windows[w].sum += (t.net ?? t.profit ?? 0);
+      windows[w].count++;
+    });
+    let worstWindow = 0;
+    windows.forEach((w,i) => { if(w.sum < windows[worstWindow].sum) worstWindow = i; });
+
+    const sessions = [
+      { key:"ASIA", from:0, to:8 },
+      { key:"EUROPE", from:8, to:16 },
+      { key:"US", from:16, to:24 }
+    ].map(s => {
+      let sum = 0, count = 0;
+      const hourBars = [];
+      trades.forEach(t => {
+        const h = new Date(t.closed_at * 1000).getUTCHours();
+        if(h >= s.from && h < s.to){ sum += (t.net ?? t.profit ?? 0); count++; }
+      });
+      for(let h = s.from; h < s.to; h++){
+        let hsum = 0;
+        trades.forEach(t => { if(new Date(t.closed_at*1000).getUTCHours() === h) hsum += (t.net ?? t.profit ?? 0); });
+        hourBars.push(hsum);
+      }
+      return { ...s, sum, count, hourBars };
+    });
+    const bestSession = sessions.reduce((a,b) => b.sum > a.sum ? b : a);
+
+    // --- Long vs Short ---
+    const longTrades = trades.filter(t => t.type === "buy_close");
+    const shortTrades = trades.filter(t => t.type === "sell_close");
+    const longNet = longTrades.reduce((s,t)=>s+(t.net??t.profit??0),0);
+    const shortNet = shortTrades.reduce((s,t)=>s+(t.net??t.profit??0),0);
+    const longWinRate = longTrades.length ? (longTrades.filter(t=>(t.net??t.profit??0)>=0).length/longTrades.length)*100 : 0;
+    const shortWinRate = shortTrades.length ? (shortTrades.filter(t=>(t.net??t.profit??0)>=0).length/shortTrades.length)*100 : 0;
+
+    // --- Holding time ---
+    const holdBuckets = { intraday:{count:0,sum:0}, overnight:{count:0,sum:0}, weekend:{count:0,sum:0} };
+    let categorizedCount = 0;
+    trades.forEach(t => {
+      const cat = categorizeHolding(t.opened_at, t.closed_at);
+      if(!cat) return;
+      holdBuckets[cat].count++;
+      holdBuckets[cat].sum += (t.net ?? t.profit ?? 0);
+      categorizedCount++;
+    });
+    const intradayPct = categorizedCount ? (holdBuckets.intraday.count/categorizedCount)*100 : 0;
+
+    // --- Power hour: la finestra di 2h che pesa di più sul netto totale ---
+    const totalNet = nets.reduce((a,b)=>a+b,0);
+    let bestPowerWindow = 0;
+    windows.forEach((w,i) => { if(w.sum > windows[bestPowerWindow].sum) bestPowerWindow = i; });
+    const powerHourPct = totalNet !== 0 ? (windows[bestPowerWindow].sum/Math.abs(totalNet))*100 : 0;
+
+    return { windows, worstWindow, sessions, bestSession, longTrades, shortTrades, longNet, shortNet,
+      longWinRate, shortWinRate, holdBuckets, categorizedCount, intradayPct, bestPowerWindow, powerHourPct, totalNet };
+  }
+
+  function renderBehaviourBlock(trades, currency){
+    if(!trades.length) return "";
+    const b = computeBehaviour(trades);
+    const total = trades.length;
+
+    // --- Card 1: sessione critica ---
+    const maxAbsHourly = Math.max(...b.sessions.flatMap(s => s.hourBars.map(Math.abs)), 0.0001);
+    const sessionBoxes = b.sessions.map(s => `
+      <div class="sessionbox">
+        <div class="sname">${s.key}</div>
+        <div class="sval" style="color:${s.sum>=0?'var(--gain)':'var(--loss)'}">${s.sum>=0?'+':''}${s.sum.toFixed(0)}</div>
+        <div class="shours">${String(s.from).padStart(2,'0')}-${String(s.to).padStart(2,'0')} · ${s.count}</div>
+        <div class="minibar-row">${s.hourBars.map(v => `<div class="minibar" style="height:${Math.max(15,(Math.abs(v)/maxAbsHourly)*100)}%; background:${v>=0?'var(--gain)':v<0?'var(--loss)':'var(--border)'}"></div>`).join("")}</div>
+      </div>`).join("");
+    const worstW = b.windows[b.worstWindow];
+    const worstFrom = b.worstWindow*2, worstTo = worstFrom+2;
+
+    const card1 = `
+      <div class="behcard loss">
+        <h5>${tr("critSession")}</h5>
+        <div class="behsub">${tr("critSessionSub")}</div>
+        <div class="behbig" style="color:var(--loss)">${String(worstFrom).padStart(2,'0')}:00 ${tr("periodTo")} ${String(worstTo).padStart(2,'0')}:00 &nbsp; ${worstW.sum.toFixed(0)} ${esc(currency)}</div>
+        <div class="behsub">${tr("costliestWindow")} ${total} ${tr("trades")}</div>
+        <div class="sessionrow">${sessionBoxes}</div>
+        <div style="font-size:0.8rem;">${tr("bestSession")}: <b style="color:var(--gain)">${b.bestSession.key} · +${b.bestSession.sum.toFixed(0)} ${esc(currency)}</b></div>
+      </div>`;
+
+    // --- Card 2: long vs short ---
+    const totalLS = b.longTrades.length + b.shortTrades.length;
+    const longPct = totalLS ? (b.longTrades.length/totalLS)*100 : 0;
+    const maxResultAbs = Math.max(Math.abs(b.longNet), Math.abs(b.shortNet), 0.0001);
+    let lsSummary;
+    if(b.longNet > 0 && b.shortNet > 0){
+      const longShare = (b.longNet/(b.longNet+b.shortNet))*100;
+      lsSummary = `${tr("bothEarn")} ${longShare.toFixed(0)}${tr("ofProfit")}`;
+    } else if(b.longNet > 0){ lsSummary = tr("onlyLongProfit"); }
+    else if(b.shortNet > 0){ lsSummary = tr("onlyShortProfit"); }
+    else { lsSummary = tr("bothNegative"); }
+
+    const card2 = `
+      <div class="behcard brand">
+        <h5>${tr("longVsShort")}</h5>
+        <div class="behsub">${total} ${tr("trades")}</div>
+        <div style="display:flex; align-items:center; gap:18px; margin:10px 0;">
+          <div class="donut" style="background:conic-gradient(var(--gain) 0% ${longPct}%, var(--loss) ${longPct}% 100%);">
+            <div class="donut-hole"><div class="donut-num">${total}</div><div class="donut-lbl">${tr("trades")}</div></div>
+          </div>
+          <div style="flex:1; font-size:0.82rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span><span style="color:var(--gain)">●</span> ${tr("long")}</span><span>${longPct.toFixed(1)}%</span><span>${b.longTrades.length}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span><span style="color:var(--loss)">●</span> ${tr("short")}</span><span>${(100-longPct).toFixed(1)}%</span><span>${b.shortTrades.length}</span></div>
+          </div>
+        </div>
+        <div style="font-size:0.68rem; color:var(--muted); margin:10px 0 2px;">${tr("result")}</div>
+        <div class="barlbl-row"><span class="barname">${tr("long")}</span><div class="bartrack"><div style="width:${Math.abs(b.longNet)/maxResultAbs*100}%; background:var(--gain);"></div></div><span class="barval">${b.longNet>=0?'+':''}${fmt(b.longNet,currency)}</span></div>
+        <div class="barlbl-row"><span class="barname">${tr("short")}</span><div class="bartrack"><div style="width:${Math.abs(b.shortNet)/maxResultAbs*100}%; background:var(--gain);"></div></div><span class="barval">${b.shortNet>=0?'+':''}${fmt(b.shortNet,currency)}</span></div>
+        <div style="font-size:0.68rem; color:var(--muted); margin:10px 0 2px;">${tr("hitRate")}</div>
+        <div class="barlbl-row"><span class="barname">${tr("long")}</span><div class="bartrack"><div style="width:${b.longWinRate}%; background:var(--muted);"></div></div><span class="barval">${b.longWinRate.toFixed(1)}%</span></div>
+        <div class="barlbl-row"><span class="barname">${tr("short")}</span><div class="bartrack"><div style="width:${b.shortWinRate}%; background:var(--muted);"></div></div><span class="barval">${b.shortWinRate.toFixed(1)}%</span></div>
+        <div class="behsub" style="margin-top:10px;">${lsSummary}</div>
+      </div>`;
+
+    // --- Card 3: durata posizione ---
+    const maxHoldAbs = Math.max(b.holdBuckets.intraday.sum, b.holdBuckets.overnight.sum, b.holdBuckets.weekend.sum, Math.abs(b.holdBuckets.intraday.sum), Math.abs(b.holdBuckets.overnight.sum), Math.abs(b.holdBuckets.weekend.sum), 0.0001);
+    const holdRow = (label, bucket) => `
+      <div class="holdrow">
+        <div class="holdtop"><span>${label}</span><span style="color:${bucket.sum>=0?'var(--gain)':'var(--loss)'}">${bucket.sum>=0?'+':''}${fmt(bucket.sum,currency)}</span></div>
+        <div class="holdmeta">${bucket.count} ${tr("trades")} · ${bucket.count?fmt(bucket.sum/bucket.count,currency):'—'} ${tr("perTrade")}</div>
+        <div class="bartrack"><div style="width:${Math.min(100,Math.abs(bucket.sum)/maxHoldAbs*100)}%; background:${bucket.sum>=0?'var(--gain)':'var(--loss)'};"></div></div>
+      </div>`;
+
+    const card3 = `
+      <div class="behcard gain">
+        <h5>${tr("holdingTime")}</h5>
+        <div class="behsub">${tr("holdingSub")}</div>
+        <div class="behbig" style="color:${b.holdBuckets.intraday.sum>=0?'var(--gain)':'var(--loss)'}">${b.holdBuckets.intraday.sum>=0?'+':''}${fmt(b.holdBuckets.intraday.sum,currency)}</div>
+        <div class="behsub">${tr("sameDay")} · ${b.holdBuckets.intraday.count} ${tr("trades")} · ${b.holdBuckets.intraday.count?fmt(b.holdBuckets.intraday.sum/b.holdBuckets.intraday.count,currency):'—'} ${tr("perTrade")}</div>
+        <div style="font-size:0.68rem; color:var(--muted); margin:12px 0 2px;">${tr("resultByHolding")}</div>
+        ${holdRow(tr("intraday"), b.holdBuckets.intraday)}
+        ${holdRow(tr("overnight"), b.holdBuckets.overnight)}
+        ${holdRow(tr("weekendGap"), b.holdBuckets.weekend)}
+        <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-top:10px;">
+          <span>${tr("profitWithinDay")}</span><b>${b.intradayPct.toFixed(1)}${tr("ofTrades")}</b>
+        </div>
+      </div>`;
+
+    const powerHourText = b.powerHourPct < 20
+      ? `${tr("noFavHour")} ${Math.max(0,b.powerHourPct).toFixed(0)}${tr("ofNetProfit")}`
+      : `${tr("bestHour2")} ${String(b.bestPowerWindow*2).padStart(2,'0')}:00-${String(b.bestPowerWindow*2+2).padStart(2,'0')}:00 ${tr("contributing")} ${b.powerHourPct.toFixed(0)}${tr("ofNet")}`;
+
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
+        <div style="font-size:0.78rem; color:var(--muted);">
+          <button class="collapsebtn" id="behaviourToggle">${behaviourCollapsed ? "▶" : "▼"}</button>
+          🧭 ${tr("behaviourTitle")}
+        </div>
+        <div style="font-size:0.76rem; color:var(--muted);">${tr("behaviourSub")}</div>
+      </div>
+      <div id="behaviourBody" style="display:${behaviourCollapsed ? 'none' : 'block'};">
+        <div class="behaviourgrid">${card1}${card2}${card3}</div>
+        <div class="powerhourbar" style="margin-top:14px; border-radius:0 0 10px 10px;">
+          <span class="phbadge">⚡ ${tr("powerHour")}</span>
+          <span>${powerHourText}</span>
+        </div>
+      </div>`;
+  }
+
+  function wireBehaviourToggle(trades){
+    const toggle = document.getElementById("behaviourToggle");
+    if(!toggle) return;
+    toggle.addEventListener("click", () => {
+      behaviourCollapsed = !behaviourCollapsed;
+      document.getElementById("behaviourWrap").innerHTML = renderBehaviourBlock(trades, accountCurrency);
+      wireBehaviourToggle(trades);
+    });
+  }
+
   function renderChartPanel(name, trades){
     const panel = document.getElementById("chartPanel");
     currentChartTrades = trades;
@@ -1426,6 +1691,8 @@
     document.getElementById("monthlyWrap").innerHTML = renderMonthlyGrid(trades, accountCurrency);
     document.getElementById("tradeStatsWrap").innerHTML = renderTradeStatsBlock(trades, accountCurrency);
     wireStatsToggle(trades);
+    document.getElementById("behaviourWrap").innerHTML = renderBehaviourBlock(trades, accountCurrency);
+    wireBehaviourToggle(trades);
     document.getElementById("closeChartBtn2").addEventListener("click", hideChartPanel);
     document.getElementById("expandChartBtn").addEventListener("click", () => openChartModal());
 
@@ -1524,7 +1791,7 @@
       const cx = scaleX(p.i).toFixed(1), cy = scaleY(p.y).toFixed(1);
       const dotColor = p.net >= 0 ? "#3ddc84" : "#ff5c5c";
       dots += `<circle cx="${cx}" cy="${cy}" r="2.6" fill="${dotColor}" stroke="#12161c" stroke-width="1">` +
-              `<title>${new Date(p.closed_at*1000).toLocaleString(locale())} · ${tr("trade")} ${p.net>=0?'+':''}${fmt(p.net, currency)} · ${tr("cumulative")} ${fmt(p.y, currency)}</title></circle>`;
+              `<title>${new Date(p.closed_at*1000).toLocaleString(locale(), { timeZone: "UTC" })} · ${tr("trade")} ${p.net>=0?'+':''}${fmt(p.net, currency)} · ${tr("cumulative")} ${fmt(p.y, currency)}</title></circle>`;
     });
 
     // Bande "pausa": vuoti reali di più giorni senza operazioni (weekend normali esclusi, servono almeno 3 giorni pieni)
@@ -1542,8 +1809,8 @@
       }
     }
 
-    const xLabelStart = new Date(points[0].closed_at*1000).toLocaleDateString(locale());
-    const xLabelEnd = new Date(points[points.length-1].closed_at*1000).toLocaleDateString(locale());
+    const xLabelStart = new Date(points[0].closed_at*1000).toLocaleDateString(locale(), { timeZone: "UTC" });
+    const xLabelEnd = new Date(points[points.length-1].closed_at*1000).toLocaleDateString(locale(), { timeZone: "UTC" });
 
     return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;">
       <text x="${padL}" y="16" font-size="11" fill="#8b94a1">${tr("cumulativeProfit")} (${esc(currency) || ''}) — ${tr("bySequence")}</text>
