@@ -203,6 +203,17 @@
   .monthgrid th{ color:var(--muted); font-weight:500; font-size:0.72rem; }
   .monthgrid td.yearlbl{ text-align:left; color:var(--muted); font-weight:600; }
   .monthgrid td.empty{ color:var(--muted); opacity:0.4; }
+
+  .statsgrid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px; }
+  @media (max-width:700px){ .statsgrid{ grid-template-columns:1fr; } }
+  .statscol{ background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:4px 16px; }
+  .statscol h4{ font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin:12px 0 4px; }
+  .statrow{ display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); font-size:0.88rem; }
+  .statrow:last-child{ border-bottom:none; }
+  .statrow .lbl{ color:var(--muted); cursor:help; }
+  .statrow .lbl .infoicon{ display:inline-block; width:14px; height:14px; border-radius:50%; background:var(--border); color:var(--muted); font-size:0.65rem; text-align:center; line-height:14px; margin-left:4px; }
+  .statrow .val{ font-family:ui-monospace,monospace; font-weight:600; }
+  .collapsebtn{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.9rem; padding:0 6px 0 0; }
 </style>
 </head>
 <body>
@@ -270,6 +281,7 @@
     <div class="chartsummary" id="chartSummary"></div>
     <div id="hourlyWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
     <div id="monthlyWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
+    <div id="tradeStatsWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
   </div>
 
   <div class="panel">
@@ -287,6 +299,8 @@
     </div>
   </div>
 </main>
+
+<button id="backToTopBtn" title="↑" style="display:none; position:fixed; bottom:24px; right:24px; width:44px; height:44px; border-radius:50%; background:var(--brand); color:#fff; border:none; font-size:1.2rem; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,0.4); z-index:900;">↑</button>
 
 <div id="chartModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; padding:24px; overflow:auto; align-items:flex-start; justify-content:center;">
   <div style="max-width:1500px; width:100%; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:28px;">
@@ -362,7 +376,23 @@
       hourlyTitle: "Fasce orarie", hourlyBest: "Migliore", hourlyWorst: "Peggiore", hourlyLocalTime: "orario del tuo browser",
       monthlyTitle: "Profitti mensili", monthlyYear: "Anno", monthlyNoData: "—",
       pauseLabel: "pausa",
-      searchEaPlaceholder: "Cerca EA...", noEaSearchResults: "Nessun EA corrisponde alla ricerca"
+      searchEaPlaceholder: "Cerca EA...", noEaSearchResults: "Nessun EA corrisponde alla ricerca",
+      tradeStats: "STATISTICHE OPERAZIONI", statsSimple: "SEMPLICI", statsAdvanced: "AVANZATE",
+      statWinRate: "Win rate", statAvgPerTrade: "Media per operazione", statAvgWin: "Media operazioni vincenti", statAvgLoss: "Media operazioni perdenti",
+      statBest: "Miglior operazione", statWorst: "Peggior operazione", statAvgDur: "Durata media operazione",
+      statBaseLot: "Lotto base", statMaxLot: "Lotto massimo", statAvgLot: "Lotto medio", statVolTotal: "Volume totale",
+      statPF: "Profit Factor", statStdDev: "Deviazione standard", statSharpe: "Sharpe Ratio", statZScore: "Z-Score",
+      statSQN: "SQN", statSkew: "Asimmetria rischio", statStagnation: "Stagnazione", statCommission: "Commissioni totali", statSwap: "Swap totale",
+      tipAvgPerTrade: "Profitto/perdita medio per singola operazione, commissioni e swap inclusi.",
+      tipBaseLot: "Il lotto più piccolo usato — utile per riconoscere la base di un grid/martingale.",
+      tipMaxLot: "Il lotto più grande usato, e quante volte è stato usato.",
+      tipPF: "Totale vinto diviso totale perso. Sopra 1 = in utile complessivo.",
+      tipStdDev: "Quanto variano i risultati delle singole operazioni rispetto alla media — più alto, più irregolare.",
+      tipSharpe: "Media dei risultati diviso la loro variabilità: più alto, risultati più costanti rispetto al rischio preso.",
+      tipZScore: "Misura se le serie di vincite/perdite consecutive sono casuali o no. Vicino a 0 = casuale; molto negativo = perdite che tendono a raggrupparsi più del normale.",
+      tipSQN: "Indice di qualità del sistema (Van Tharp): combina numero di operazioni e costanza dei risultati.",
+      tipSkew: "Se i risultati tendono più verso perdite piccole e frequenti con rare vincite grandi (positivo), o il contrario (negativo).",
+      tipStagnation: "Il periodo più lungo senza un nuovo massimo di equity — quanto è durata la fase più lunga 'sott'acqua'."
     },
     en: {
       connecting: "connecting…", loadingAccounts: "Loading accounts…",
@@ -423,7 +453,23 @@
       hourlyTitle: "Hourly performance", hourlyBest: "Best", hourlyWorst: "Worst", hourlyLocalTime: "your browser's local time",
       monthlyTitle: "Monthly profit", monthlyYear: "Year", monthlyNoData: "—",
       pauseLabel: "pause",
-      searchEaPlaceholder: "Search EA...", noEaSearchResults: "No EA matches your search"
+      searchEaPlaceholder: "Search EA...", noEaSearchResults: "No EA matches your search",
+      tradeStats: "TRADE STATISTICS", statsSimple: "SIMPLE", statsAdvanced: "ADVANCED",
+      statWinRate: "Win rate", statAvgPerTrade: "Avg per trade", statAvgWin: "Avg winning trade", statAvgLoss: "Avg losing trade",
+      statBest: "Best trade", statWorst: "Worst trade", statAvgDur: "Avg trade duration",
+      statBaseLot: "Base lot", statMaxLot: "Max lot", statAvgLot: "Avg lot", statVolTotal: "Volume total",
+      statPF: "Profit Factor", statStdDev: "Standard deviation", statSharpe: "Sharpe Ratio", statZScore: "Z-Score",
+      statSQN: "SQN", statSkew: "Risk Skew", statStagnation: "Stagnation", statCommission: "Commission total", statSwap: "Swap total",
+      tipAvgPerTrade: "Average profit/loss per single trade, commission and swap included.",
+      tipBaseLot: "The smallest lot used — useful to spot the base size of a grid/martingale.",
+      tipMaxLot: "The largest lot used, and how many times it was used.",
+      tipPF: "Total won divided by total lost. Above 1 = net profitable.",
+      tipStdDev: "How much individual trade results vary from the average — higher means more erratic.",
+      tipSharpe: "Average result divided by its variability: higher means steadier returns for the risk taken.",
+      tipZScore: "Measures whether streaks of consecutive wins/losses are random or not. Near 0 = random; strongly negative = losses tend to cluster more than normal.",
+      tipSQN: "System Quality Number (Van Tharp): combines trade count and consistency of results.",
+      tipSkew: "Whether results tend toward frequent small losses with rare large wins (positive), or the opposite (negative).",
+      tipStagnation: "The longest stretch without a new equity high — how long the longest 'underwater' phase lasted."
     }
   };
   function tr(key){ return T[lang][key] ?? key; }
@@ -436,6 +482,13 @@
     document.getElementById("langToggle").textContent = lang === "it" ? "EN" : "IT";
   }
   applyStaticTranslations();
+
+  // ---------- Pulsante "torna su" ----------
+  const backToTopBtn = document.getElementById("backToTopBtn");
+  window.addEventListener("scroll", () => {
+    backToTopBtn.style.display = window.scrollY > 500 ? "block" : "none";
+  });
+  backToTopBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 
   document.getElementById("langToggle").addEventListener("click", () => {
     lang = lang === "it" ? "en" : "it";
@@ -1219,6 +1272,144 @@
       <div style="overflow-x:auto;"><table class="monthgrid">${head}${rows}</table></div>`;
   }
 
+  // ---------- Statistiche operazioni: metriche semplici e avanzate (profit factor, Sharpe, Z-Score, SQN, skew, stagnazione...) ----------
+  function computeTradeStatistics(trades){
+    const count = trades.length;
+    const nets = trades.map(t => t.net ?? t.profit ?? 0);
+    const wins = nets.filter(n => n >= 0);
+    const losses = nets.filter(n => n < 0);
+    const winRate = count ? (wins.length/count)*100 : 0;
+    const mean = count ? nets.reduce((a,b)=>a+b,0)/count : 0;
+    const avgWin = wins.length ? wins.reduce((a,b)=>a+b,0)/wins.length : 0;
+    const avgLoss = losses.length ? losses.reduce((a,b)=>a+b,0)/losses.length : 0;
+    const bestTrade = nets.length ? Math.max(...nets) : 0;
+    const worstTrade = nets.length ? Math.min(...nets) : 0;
+
+    const durVals = trades.filter(t => t.duration_sec).map(t => t.duration_sec);
+    const avgDuration = durVals.length ? durVals.reduce((a,b)=>a+b,0)/durVals.length : 0;
+
+    const lots = trades.map(t => t.volume || 0).filter(v => v > 0);
+    const baseLot = lots.length ? Math.min(...lots) : 0;
+    const maxLot = lots.length ? Math.max(...lots) : 0;
+    const maxLotCount = lots.filter(l => Math.abs(l - maxLot) < 1e-9).length;
+    const avgLot = lots.length ? lots.reduce((a,b)=>a+b,0)/lots.length : 0;
+    const volumeTotal = lots.reduce((a,b)=>a+b,0);
+
+    const grossWin = wins.reduce((a,b)=>a+b,0);
+    const grossLoss = Math.abs(losses.reduce((a,b)=>a+b,0));
+    const profitFactor = grossLoss > 0 ? grossWin/grossLoss : (grossWin > 0 ? Infinity : 0);
+
+    const variance = count ? nets.reduce((s,n)=>s+Math.pow(n-mean,2),0)/count : 0;
+    const stdev = Math.sqrt(variance);
+    const sharpe = stdev > 0 ? mean/stdev : 0;
+    const sqn = stdev > 0 ? Math.sqrt(count) * (mean/stdev) : 0;
+    const skew = stdev > 0 ? (nets.reduce((s,n)=>s+Math.pow(n-mean,3),0)/count) / Math.pow(stdev,3) : 0;
+
+    // Z-Score: test statistico sulle serie di vincite/perdite consecutive (Wald-Wolfowitz runs test)
+    const sortedForRuns = trades.slice().sort((a,b) => a.closed_at - b.closed_at);
+    const seq = sortedForRuns.map(t => (t.net ?? t.profit ?? 0) >= 0 ? "W" : "L");
+    let runs = seq.length ? 1 : 0;
+    for(let i = 1; i < seq.length; i++) if(seq[i] !== seq[i-1]) runs++;
+    const W = wins.length, L = losses.length, Ntot = W + L;
+    let zScore = 0;
+    if(Ntot > 1 && W > 0 && L > 0){
+      const expR = (2*W*L)/Ntot + 1;
+      const varR = (2*W*L*(2*W*L - Ntot)) / (Ntot*Ntot*(Ntot-1));
+      zScore = varR > 0 ? (runs - expR)/Math.sqrt(varR) : 0;
+    }
+
+    // Stagnazione: il periodo più lungo (in giorni) senza un nuovo massimo di equity
+    const series = buildSeries(trades);
+    let peak = -Infinity, lastPeakTime = null, maxGapDays = 0;
+    series.forEach(p => {
+      if(p.y > peak){
+        if(lastPeakTime !== null){
+          const gapDays = (p.closed_at - lastPeakTime)/86400;
+          if(gapDays > maxGapDays) maxGapDays = gapDays;
+        }
+        peak = p.y;
+        lastPeakTime = p.closed_at;
+      }
+    });
+    if(series.length && lastPeakTime !== null){
+      const tailGapDays = (series[series.length-1].closed_at - lastPeakTime)/86400;
+      if(tailGapDays > maxGapDays) maxGapDays = tailGapDays;
+    }
+
+    const commissionTotal = trades.reduce((s,t) => s + (t.commission ?? 0), 0);
+    const swapTotal = trades.reduce((s,t) => s + (t.swap ?? 0), 0);
+
+    return { count, winRate, avgPerTrade: mean, avgWin, avgLoss, bestTrade, worstTrade, avgDuration,
+      baseLot, maxLot, maxLotCount, avgLot, volumeTotal, profitFactor, stdev, sharpe, sqn, skew, zScore,
+      stagnationDays: maxGapDays, commissionTotal, swapTotal };
+  }
+
+  let tradeStatsCollapsed = false;
+
+  function renderTradeStatsBlock(trades, currency){
+    if(!trades.length) return "";
+    const s = computeTradeStatistics(trades);
+    const row = (label, tip, value, color) => `
+      <div class="statrow">
+        <span class="lbl" title="${esc(tip||'')}">${label}${tip ? '<span class="infoicon">i</span>' : ""}</span>
+        <span class="val" style="${color ? `color:${color}` : ''}">${value}</span>
+      </div>`;
+    const gain = "var(--gain)", loss = "var(--loss)";
+
+    const simpleRows = [
+      row(tr("statWinRate"), "", s.winRate.toFixed(1) + "%"),
+      row(tr("statAvgPerTrade"), tr("tipAvgPerTrade"), (s.avgPerTrade>=0?'+':'') + fmt(s.avgPerTrade, currency), s.avgPerTrade>=0?gain:loss),
+      row(tr("statAvgWin"), "", '+' + fmt(s.avgWin, currency), gain),
+      row(tr("statAvgLoss"), "", fmt(s.avgLoss, currency), loss),
+      row(tr("statBest"), "", '+' + fmt(s.bestTrade, currency), gain),
+      row(tr("statWorst"), "", fmt(s.worstTrade, currency), loss),
+      row(tr("statAvgDur"), "", s.avgDuration ? fmtDuration(s.avgDuration) : "—"),
+      row(tr("statBaseLot"), tr("tipBaseLot"), s.baseLot.toFixed(2)),
+      row(tr("statMaxLot"), tr("tipMaxLot"), s.maxLot.toFixed(2) + " · ×" + s.maxLotCount),
+      row(tr("statAvgLot"), "", s.avgLot.toFixed(2)),
+      row(tr("statVolTotal"), "", s.volumeTotal.toFixed(2) + " Lots")
+    ].join("");
+
+    const advancedRows = [
+      row(tr("statPF"), tr("tipPF"), s.profitFactor >= 999 ? "∞" : s.profitFactor.toFixed(2), s.profitFactor>=1?gain:loss),
+      row(tr("statStdDev"), tr("tipStdDev"), s.stdev.toFixed(2)),
+      row(tr("statSharpe"), tr("tipSharpe"), s.sharpe.toFixed(2)),
+      row(tr("statZScore"), tr("tipZScore"), s.zScore.toFixed(2)),
+      row(tr("statSQN"), tr("tipSQN"), s.sqn.toFixed(2)),
+      row(tr("statSkew"), tr("tipSkew"), s.skew.toFixed(2)),
+      row(tr("statStagnation"), tr("tipStagnation"), s.stagnationDays.toFixed(0) + " " + tr("days")),
+      row(tr("statCommission"), "", (s.commissionTotal>=0?'+':'') + fmt(s.commissionTotal, currency)),
+      row(tr("statSwap"), "", (s.swapTotal>=0?'+':'') + fmt(s.swapTotal, currency), s.swapTotal>=0?gain:loss)
+    ].join("");
+
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
+        <div style="font-size:0.78rem; color:var(--muted);">
+          <button class="collapsebtn" id="tradeStatsToggle">${tradeStatsCollapsed ? "▶" : "▼"}</button>
+          📊 ${tr("tradeStats")}
+        </div>
+        <div style="font-size:0.76rem; color:var(--muted);">
+          ${s.count} ${tr("trades")} · ${tr("winRate")} ${s.winRate.toFixed(1)}% · ${tr("colAvgDuration")} ${s.avgDuration ? fmtDuration(s.avgDuration) : "—"}
+        </div>
+      </div>
+      <div id="tradeStatsBody" style="display:${tradeStatsCollapsed ? 'none' : 'block'};">
+        <div class="statsgrid">
+          <div class="statscol"><h4>${tr("statsSimple")}</h4>${simpleRows}</div>
+          <div class="statscol"><h4>${tr("statsAdvanced")}</h4>${advancedRows}</div>
+        </div>
+      </div>`;
+  }
+
+  function wireStatsToggle(trades){
+    const statsToggle = document.getElementById("tradeStatsToggle");
+    if(!statsToggle) return;
+    statsToggle.addEventListener("click", () => {
+      tradeStatsCollapsed = !tradeStatsCollapsed;
+      document.getElementById("tradeStatsWrap").innerHTML = renderTradeStatsBlock(trades, accountCurrency);
+      wireStatsToggle(trades);
+    });
+  }
+
   function renderChartPanel(name, trades){
     const panel = document.getElementById("chartPanel");
     currentChartTrades = trades;
@@ -1233,6 +1424,8 @@
     document.getElementById("scoreWrap").innerHTML = renderScoreBlock(trades);
     document.getElementById("hourlyWrap").innerHTML = renderHourlyBlock(trades);
     document.getElementById("monthlyWrap").innerHTML = renderMonthlyGrid(trades, accountCurrency);
+    document.getElementById("tradeStatsWrap").innerHTML = renderTradeStatsBlock(trades, accountCurrency);
+    wireStatsToggle(trades);
     document.getElementById("closeChartBtn2").addEventListener("click", hideChartPanel);
     document.getElementById("expandChartBtn").addEventListener("click", () => openChartModal());
 
