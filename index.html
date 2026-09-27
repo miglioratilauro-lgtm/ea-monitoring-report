@@ -361,7 +361,8 @@
       customGroupPrompt: 'Nome del gruppo unificato (es. "TopEAstore.com"):', customGroupBadge: "Gruppo personalizzato",
       hourlyTitle: "Fasce orarie", hourlyBest: "Migliore", hourlyWorst: "Peggiore", hourlyLocalTime: "orario del tuo browser",
       monthlyTitle: "Profitti mensili", monthlyYear: "Anno", monthlyNoData: "—",
-      pauseLabel: "pausa"
+      pauseLabel: "pausa",
+      searchEaPlaceholder: "Cerca EA...", noEaSearchResults: "Nessun EA corrisponde alla ricerca"
     },
     en: {
       connecting: "connecting…", loadingAccounts: "Loading accounts…",
@@ -421,7 +422,8 @@
       customGroupPrompt: 'Name for the merged group (e.g. "TopEAstore.com"):', customGroupBadge: "Custom group",
       hourlyTitle: "Hourly performance", hourlyBest: "Best", hourlyWorst: "Worst", hourlyLocalTime: "your browser's local time",
       monthlyTitle: "Monthly profit", monthlyYear: "Year", monthlyNoData: "—",
-      pauseLabel: "pause"
+      pauseLabel: "pause",
+      searchEaPlaceholder: "Search EA...", noEaSearchResults: "No EA matches your search"
     }
   };
   function tr(key){ return T[lang][key] ?? key; }
@@ -524,6 +526,7 @@
   let currentAccount = null;
   let allAccountIds = [];
   const accountSelect = document.getElementById("accountSelect");
+  const LAST_ACCOUNT_KEY = "eaDashboard_lastAccount";
 
   db.ref("accounts").on("value", (snap) => {
     const accounts = snap.val() || {};
@@ -532,7 +535,8 @@
     if(!currentAccount && allAccountIds.length){
       const hidden = getHidden();
       const visible = allAccountIds.filter(id => !hidden.includes(id));
-      currentAccount = (visible[0] || allAccountIds[0]);
+      const lastSeen = localStorage.getItem(LAST_ACCOUNT_KEY);
+      currentAccount = (lastSeen && visible.includes(lastSeen)) ? lastSeen : (visible[0] || allAccountIds[0]);
       accountSelect.value = currentAccount;
       watchAccount(currentAccount);
     }
@@ -576,14 +580,29 @@
   let allTrades = [];
   let filters = { magic: "", comment: "", symbol: "", prefix: "", custom: "" };
 
-  let statusRef = null, tradesRef = null, ddMonitorRef = null;
+  let statusRef = null, tradesRef = null, ddMonitorRef = null, customGroupsMagicsRef = null, customGroupsCommentsRef = null;
+  let customGroupsData = { magics:{}, commentsRaw:{} }; // popolato in tempo reale da Firebase in watchAccount()
   let ddMonitorData = {};
 
   function watchAccount(accountId){
     currentAccount = accountId;
+    try { localStorage.setItem(LAST_ACCOUNT_KEY, accountId); } catch(e){}
     if(statusRef) statusRef.off();
     if(tradesRef) tradesRef.off();
     if(ddMonitorRef) ddMonitorRef.off();
+    if(customGroupsMagicsRef) customGroupsMagicsRef.off();
+    if(customGroupsCommentsRef) customGroupsCommentsRef.off();
+
+    customGroupsMagicsRef = db.ref(`accounts/${accountId}/custom_groups_magics`);
+    customGroupsMagicsRef.on("value", (snap) => {
+      customGroupsData.magics = snap.val() || {};
+      renderEaSummary(allTrades); renderTop5(allTrades);
+    });
+    customGroupsCommentsRef = db.ref(`accounts/${accountId}/custom_groups_comments`);
+    customGroupsCommentsRef.on("value", (snap) => {
+      customGroupsData.commentsRaw = snap.val() || {};
+      renderEaSummary(allTrades); renderTop5(allTrades);
+    });
 
     ddMonitorRef = db.ref(`accounts/${accountId}/dd_monitor`);
     ddMonitorRef.on("value", (snap) => { ddMonitorData = snap.val() || {}; });
@@ -680,38 +699,38 @@
   }
 
   // ---------- Gruppi personalizzati: unione manuale di magic/commenti diversi sotto un nome scelto da te ----------
-  // Salvato solo nel browser, per conto — non tocca i dati su Firebase, completamente reversibile.
-  const CUSTOM_GROUPS_KEY = "eaDashboard_customGroups";
-  function getAllCustomGroups(){ try { return JSON.parse(localStorage.getItem(CUSTOM_GROUPS_KEY)) || {}; } catch(e){ return {}; } }
-  function setAllCustomGroups(all){ try { localStorage.setItem(CUSTOM_GROUPS_KEY, JSON.stringify(all)); } catch(e){} }
-  function getCustomGroups(){ const all = getAllCustomGroups(); return all[currentAccount] || { magics:{}, comments:{} }; }
-  function saveCustomGroups(cg){ const all = getAllCustomGroups(); all[currentAccount] = cg; setAllCustomGroups(all); }
-
+  // Salvato su Firebase (condiviso con chiunque guardi questo conto), non solo nel tuo browser.
+  // I commenti possono contenere caratteri non validi come chiave Firebase (. # $ [ ]), quindi li salviamo
+  // come una lista con chiave automatica invece di usare il testo del commento come chiave.
   function customLabelFor(t){
-    const cg = getCustomGroups();
     const m = String(t.magic ?? 0);
-    if(cg.magics[m]) return cg.magics[m];
+    if(customGroupsData.magics[m]) return customGroupsData.magics[m];
     const c = (t.comment || "").trim();
-    if(c && cg.comments[c]) return cg.comments[c];
+    if(c){
+      const match = Object.values(customGroupsData.commentsRaw || {}).find(e => e.comment === c);
+      if(match) return match.label;
+    }
     return null;
   }
 
   function mergeGroupsInto(groupsToMerge, label){
-    const cg = getCustomGroups();
     groupsToMerge.forEach(g => {
-      g.magics.forEach(m => { cg.magics[m] = label; });
-      g.comments.forEach(c => { cg.comments[c] = label; });
+      g.magics.forEach(m => {
+        db.ref(`accounts/${currentAccount}/custom_groups_magics/${m}`).set(label).catch(e => console.error(e));
+      });
+      g.comments.forEach(c => {
+        db.ref(`accounts/${currentAccount}/custom_groups_comments`).push({ comment: c, label: label }).catch(e => console.error(e));
+      });
     });
-    saveCustomGroups(cg);
   }
 
   function removeCustomGroup(label){
-    const cg = getCustomGroups();
-    Object.keys(cg.magics).forEach(k => { if(cg.magics[k] === label) delete cg.magics[k]; });
-    Object.keys(cg.comments).forEach(k => { if(cg.comments[k] === label) delete cg.comments[k]; });
-    saveCustomGroups(cg);
-    renderEaSummary(allTrades);
-    renderTop5(allTrades);
+    Object.entries(customGroupsData.magics).forEach(([k,v]) => {
+      if(v === label) db.ref(`accounts/${currentAccount}/custom_groups_magics/${k}`).remove().catch(e => console.error(e));
+    });
+    Object.entries(customGroupsData.commentsRaw || {}).forEach(([key,entry]) => {
+      if(entry.label === label) db.ref(`accounts/${currentAccount}/custom_groups_comments/${key}`).remove().catch(e => console.error(e));
+    });
   }
 
   // ---------- Raggruppamento per EA: nome breve (default), commento intero, o magic number ----------
@@ -780,10 +799,17 @@
 
   let eaSortState = { key: "net", dir: -1 };
 
+  let eaSearchTerm = "";
+
   function renderEaSummary(trades){
     const wrap = document.getElementById("eaWrap");
-    const groups = groupByEa(trades);
+    let groups = groupByEa(trades);
     if(!groups.length){ wrap.innerHTML = `<div class="empty">${tr("noTradesClosed")}</div>`; return; }
+    const allGroupsCount = groups.length;
+    if(eaSearchTerm.trim()){
+      const needle = eaSearchTerm.trim().toLowerCase();
+      groups = groups.filter(g => g.name.toLowerCase().includes(needle) || (g.subtitle && g.subtitle.toLowerCase().includes(needle)));
+    }
 
     const cols = [
       {key:"_sel", label:""},
@@ -828,8 +854,11 @@
       </tr>`).join("");
 
     const customGroups = [...new Set(groups.filter(g => g.custom).map(g => g.name))];
+    const noSearchResults = eaSearchTerm.trim() && !groups.length;
     const toolbar = `
       <div style="display:flex; align-items:center; gap:14px; margin-bottom:10px; font-size:0.82rem; flex-wrap:wrap;">
+        <input type="text" id="eaSearchInput" placeholder="${esc(tr("searchEaPlaceholder"))}" value="${esc(eaSearchTerm)}"
+          style="background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:0.82rem; min-width:180px;">
         <button class="iconbtn" id="mergeSelectedBtn" disabled>${tr("mergeSelected")}</button>
         ${customGroups.length ? `<button class="linkbtn" id="manageGroupsBtn">${tr("manageGroups")} (${customGroups.length})</button>` : ""}
       </div>
@@ -837,7 +866,20 @@
         ${customGroups.map(name => `<span class="riskflag on" style="margin-right:6px;">${esc(name)} <a href="#" data-remove="${esc(name)}" style="color:var(--loss); margin-left:6px; text-decoration:none;">✕</a></span>`).join("")}
       </div>`;
 
-    wrap.innerHTML = toolbar + `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+    if(noSearchResults){
+      wrap.innerHTML = toolbar + `<div class="empty">${tr("noEaSearchResults")}</div>`;
+    } else {
+      wrap.innerHTML = toolbar + `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+    }
+
+    const searchInput = document.getElementById("eaSearchInput");
+    searchInput.addEventListener("input", (e) => {
+      eaSearchTerm = e.target.value;
+      const caret = e.target.selectionStart;
+      renderEaSummary(trades);
+      const newInput = document.getElementById("eaSearchInput");
+      if(newInput){ newInput.focus(); newInput.setSelectionRange(caret, caret); }
+    });
 
     wrap.querySelectorAll("th.sortable").forEach(th => {
       th.addEventListener("click", () => {
