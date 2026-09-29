@@ -379,6 +379,7 @@
       colEa: "EA", colTrades: "Operazioni", colWinRate: "Win rate", colLots: "Lotti tot.", colNet: "Netto",
       colAvgTrade: "Media/trade", colAvgDuration: "Durata media",
       colClosedOn: "Chiusa il", colOpenedOn: "Aperta il", colSymbol: "Simbolo", colSide: "Verso", colLotsShort: "Lotti", colComment: "Commento",
+      colSL: "SL", colTP: "TP", selectAll: "Seleziona tutto", deselectAll: "Deseleziona tutto",
       colMagic: "Magic", colDuration: "Durata",
       expand: "espandi", close: "chiudi",
       period: "Periodo", tradesCount: "Operazioni", net: "Netto",
@@ -471,6 +472,7 @@
       colEa: "EA", colTrades: "Trades", colWinRate: "Win rate", colLots: "Total lots", colNet: "Net",
       colAvgTrade: "Avg/trade", colAvgDuration: "Avg duration",
       colClosedOn: "Closed on", colOpenedOn: "Opened on", colSymbol: "Symbol", colSide: "Side", colLotsShort: "Lots", colComment: "Comment",
+      colSL: "SL", colTP: "TP", selectAll: "Select all", deselectAll: "Deselect all",
       colMagic: "Magic", colDuration: "Duration",
       expand: "expand", close: "close",
       period: "Period", tradesCount: "Trades", net: "Net",
@@ -982,6 +984,8 @@
       <div style="display:flex; align-items:center; gap:14px; margin-bottom:10px; font-size:0.82rem; flex-wrap:wrap;">
         <input type="text" id="eaSearchInput" placeholder="${esc(tr("searchEaPlaceholder"))}" value="${esc(eaSearchTerm)}"
           style="background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:0.82rem; min-width:180px;">
+        <button class="linkbtn" id="selectAllBtn">${tr("selectAll")}</button>
+        <button class="linkbtn" id="deselectAllBtn">${tr("deselectAll")}</button>
         <button class="iconbtn" id="mergeSelectedBtn" disabled>${tr("mergeSelected")}</button>
         ${customGroups.length ? `<button class="linkbtn" id="manageGroupsBtn">${tr("manageGroups")} (${customGroups.length})</button>` : ""}
       </div>
@@ -1016,10 +1020,18 @@
 
     const mergeBtn = document.getElementById("mergeSelectedBtn");
     const checkboxes = wrap.querySelectorAll(".eaSelectBox");
-    checkboxes.forEach(cb => cb.addEventListener("change", () => {
-      const checkedCount = wrap.querySelectorAll(".eaSelectBox:checked").length;
-      mergeBtn.disabled = checkedCount < 2;
-    }));
+    const updateMergeBtnState = () => {
+      mergeBtn.disabled = wrap.querySelectorAll(".eaSelectBox:checked").length < 2;
+    };
+    checkboxes.forEach(cb => cb.addEventListener("change", updateMergeBtnState));
+    document.getElementById("selectAllBtn").addEventListener("click", () => {
+      checkboxes.forEach(cb => { cb.checked = true; });
+      updateMergeBtnState();
+    });
+    document.getElementById("deselectAllBtn").addEventListener("click", () => {
+      checkboxes.forEach(cb => { cb.checked = false; });
+      updateMergeBtnState();
+    });
     mergeBtn.addEventListener("click", () => {
       const selectedNames = [...wrap.querySelectorAll(".eaSelectBox:checked")].map(cb => cb.dataset.name);
       const selectedGroups = groups.filter(g => selectedNames.includes(g.name));
@@ -1862,6 +1874,7 @@
     }
     if(!trades.length){ wrap.innerHTML = `<div class="empty">${tr("noTradesFound")}</div>`; return; }
 
+    const fmtPrice = v => (!v || v === 0) ? "—" : Number(v).toString();
     const cols = [
       {key:"opened_at", label:tr("colOpenedOn")},
       {key:"closed_at", label:tr("colClosedOn")},
@@ -1870,6 +1883,8 @@
       {key:"volume", label:tr("colLotsShort"), num:true},
       {key:"comment", label:tr("colComment")},
       {key:"magic", label:tr("colMagic"), num:true},
+      {key:"sl", label:tr("colSL"), num:true},
+      {key:"tp", label:tr("colTP"), num:true},
       {key:"duration_sec", label:tr("colDuration"), num:true},
       {key:"net", label:tr("colNet"), num:true}
     ];
@@ -1883,6 +1898,8 @@
         <td class="num">${(t.volume ?? 0).toFixed(2)}</td>
         <td>${esc(t.comment) || ""}</td>
         <td class="num">${esc(t.magic ?? 0)}</td>
+        <td class="num">${esc(fmtPrice(t.sl))}</td>
+        <td class="num">${esc(fmtPrice(t.tp))}</td>
         <td class="num">${fmtDuration(t.duration_sec)}</td>
         <td class="num" style="color:${(t.net ?? t.profit) >= 0 ? 'var(--gain)' : 'var(--loss)'}">${fmt(t.net ?? t.profit)}</td>
       </tr>`).join("");
