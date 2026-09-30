@@ -1821,20 +1821,34 @@
       }
     }
 
-    const xLabelStart = new Date(points[0].closed_at*1000).toLocaleDateString(locale(), { timeZone: "UTC" });
-    const xLabelEnd = new Date(points[points.length-1].closed_at*1000).toLocaleDateString(locale(), { timeZone: "UTC" });
+    // Etichette data lungo l'asse X: non solo inizio/fine, alcune tacche intermedie per orientarsi
+    const xTickCount = W > 500 ? 5 : 3;
+    let xTickLines = "", xTickTexts = "";
+    for(let i = 0; i < xTickCount; i++){
+      const idx = Math.round((points.length - 1) * (i / (xTickCount - 1)));
+      const p = points[idx];
+      const xpos = scaleX(p.i);
+      const label = new Date(p.closed_at*1000).toLocaleDateString(locale(), { timeZone: "UTC" });
+      let anchor = "middle", tx = xpos;
+      if(i === 0){ anchor = "start"; tx = padL; }
+      if(i === xTickCount-1){ anchor = "end"; tx = W-padR; }
+      xTickTexts += `<text x="${tx.toFixed(1)}" y="${H-8}" text-anchor="${anchor}" font-size="10" fill="#8b94a1">${label}</text>`;
+      if(i > 0 && i < xTickCount-1){
+        xTickLines += `<line x1="${xpos.toFixed(1)}" y1="${padT}" x2="${xpos.toFixed(1)}" y2="${padT+plotH}" stroke="#2a323d" stroke-width="1" stroke-dasharray="2,3"/>`;
+      }
+    }
 
     return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;">
       <text x="${padL}" y="16" font-size="11" fill="#8b94a1">${tr("cumulativeProfit")} (${esc(currency) || ''}) — ${tr("bySequence")}</text>
       ${gridLines}
       ${gridLabels}
+      ${xTickLines}
       ${pauseBands}
       <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="#5b8def" stroke-width="1" stroke-dasharray="3,3"/>
       <path d="${areaPath}" fill="${color}" opacity="0.10" stroke="none"/>
       <path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>
       ${dots}
-      <text x="${padL}" y="${H-8}" font-size="10" fill="#8b94a1">${xLabelStart}</text>
-      <text x="${W-padR}" y="${H-8}" text-anchor="end" font-size="10" fill="#8b94a1">${xLabelEnd}</text>
+      ${xTickTexts}
     </svg>`;
   }
 
