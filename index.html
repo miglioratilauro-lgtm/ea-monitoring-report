@@ -311,20 +311,7 @@
     <div id="eaWrap"><div class="empty" data-i18n="waitingData">In attesa di dati…</div></div>
   </div>
 
-  <div class="panel" id="chartPanel" style="display:none;">
-    <h2 id="chartTitle" data-i18n="trendTitle">Andamento</h2>
-    <div id="scoreWrap"></div>
-    <div id="chartWrap"></div>
-    <div id="drawdownWrap" style="margin-top:6px;"></div>
-    <div id="realDdWrap"></div>
-    <div class="chartsummary" id="chartSummary"></div>
-    <div id="hourlyWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
-    <div id="monthlyWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
-    <div id="tradeStatsWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
-    <div id="behaviourWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
-  </div>
-
-  <div class="panel">
+  <div class="panel" id="tradesPanel">
     <h2>📋 <span data-i18n="tradesTitle">Operazioni chiuse</span> <span id="tradesSubtitle"></span></h2>
     <div class="filterrow">
       <div class="fgroup"><label for="magicFilter" data-i18n="filterEa">EA:</label>
@@ -337,6 +324,19 @@
     <div id="tradesWrap">
       <div class="empty" data-i18n="waitingData">In attesa di dati…</div>
     </div>
+  </div>
+
+  <div class="panel" id="chartPanel" style="display:none;">
+    <h2 id="chartTitle" data-i18n="trendTitle">Andamento</h2>
+    <div id="scoreWrap"></div>
+    <div id="chartWrap"></div>
+    <div id="drawdownWrap" style="margin-top:6px;"></div>
+    <div id="realDdWrap"></div>
+    <div class="chartsummary" id="chartSummary"></div>
+    <div id="hourlyWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
+    <div id="monthlyWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
+    <div id="tradeStatsWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
+    <div id="behaviourWrap" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
   </div>
 </main>
 
@@ -1108,7 +1108,7 @@
     const filtered = applyFilters(allTrades);
     renderTrades(filtered);
     renderChartPanel(name, filtered);
-    document.getElementById("chartPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("tradesPanel").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   let accountCurrency = "";
