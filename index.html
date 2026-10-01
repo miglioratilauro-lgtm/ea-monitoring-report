@@ -379,7 +379,7 @@
       colEa: "EA", colTrades: "Operazioni", colWinRate: "Win rate", colLots: "Lotti tot.", colNet: "Netto",
       colAvgTrade: "Media/trade", colAvgDuration: "Durata media",
       colClosedOn: "Chiusa il", colOpenedOn: "Aperta il", colSymbol: "Simbolo", colSide: "Verso", colLotsShort: "Lotti", colComment: "Commento",
-      colSL: "SL", colTP: "TP", selectAll: "Seleziona tutto", deselectAll: "Deseleziona tutto",
+      colSL: "SL", colTP: "TP", colOpenPrice: "Prezzo apertura", colClosePrice: "Prezzo chiusura", selectAll: "Seleziona tutto", deselectAll: "Deseleziona tutto",
       colMagic: "Magic", colDuration: "Durata",
       expand: "espandi", close: "chiudi",
       period: "Periodo", tradesCount: "Operazioni", net: "Netto",
@@ -472,7 +472,7 @@
       colEa: "EA", colTrades: "Trades", colWinRate: "Win rate", colLots: "Total lots", colNet: "Net",
       colAvgTrade: "Avg/trade", colAvgDuration: "Avg duration",
       colClosedOn: "Closed on", colOpenedOn: "Opened on", colSymbol: "Symbol", colSide: "Side", colLotsShort: "Lots", colComment: "Comment",
-      colSL: "SL", colTP: "TP", selectAll: "Select all", deselectAll: "Deselect all",
+      colSL: "SL", colTP: "TP", colOpenPrice: "Open price", colClosePrice: "Close price", selectAll: "Select all", deselectAll: "Deselect all",
       colMagic: "Magic", colDuration: "Duration",
       expand: "expand", close: "close",
       period: "Period", tradesCount: "Trades", net: "Net",
@@ -602,11 +602,11 @@
   const fmtDuration = (sec) => {
     if(!sec || sec <= 0) return "—";
     sec = Math.round(sec);
-    const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+    const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
     if(d > 0) return `${d}${tr("durD")} ${h}h`;
     if(h > 0) return `${h}h ${m}m`;
-    if(m > 0) return `${m}m`;
-    return `${sec}s`;
+    if(m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
   };
   const eaLabel = (t) => (t.comment && t.comment.trim()) ? t.comment.trim() : `Magic ${t.magic ?? 0}`;
   const eaShortName = (t) => {
@@ -1897,6 +1897,8 @@
       {key:"volume", label:tr("colLotsShort"), num:true},
       {key:"comment", label:tr("colComment")},
       {key:"magic", label:tr("colMagic"), num:true},
+      {key:"open_price", label:tr("colOpenPrice"), num:true},
+      {key:"close_price", label:tr("colClosePrice"), num:true},
       {key:"sl", label:tr("colSL"), num:true},
       {key:"tp", label:tr("colTP"), num:true},
       {key:"duration_sec", label:tr("colDuration"), num:true},
@@ -1912,6 +1914,8 @@
         <td class="num">${(t.volume ?? 0).toFixed(2)}</td>
         <td>${esc(t.comment) || ""}</td>
         <td class="num">${esc(t.magic ?? 0)}</td>
+        <td class="num">${esc(fmtPrice(t.open_price))}</td>
+        <td class="num">${esc(fmtPrice(t.close_price))}</td>
         <td class="num">${esc(fmtPrice(t.sl))}</td>
         <td class="num">${esc(fmtPrice(t.tp))}</td>
         <td class="num">${fmtDuration(t.duration_sec)}</td>
